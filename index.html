@@ -33,6 +33,7 @@
 
   <section id="produtos" class="produtos">
     <h3>Nossos Programas</h3>
+    <div id="product-count" class="product-count"></div>
     <div id="product-list" class="product-list">
       <!-- Os produtos serão inseridos aqui via JavaScript -->
     </div>
@@ -52,12 +53,24 @@
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2 id="modal-title"></h2>
+      <div class="carousel" id="modal-carousel" style="display: none;">
+        <div class="carousel-inner" id="carousel-inner"></div>
+        <button class="carousel-control prev" id="carousel-prev">&#10094;</button>
+        <button class="carousel-control next" id="carousel-next">&#10095;</button>
+        <div class="carousel-dots" id="carousel-dots"></div>
+      </div>
       <p><strong>Tamanho:</strong> <span id="modal-size"></span></p>
       <p><strong>Versão:</strong> <span id="modal-version"></span></p>
       <p><strong>Compatibilidade:</strong> <span id="modal-compatibility"></span></p>
       <p id="modal-description"></p>
       <button class="download-btn">Download</button>
     </div>
+  </div>
+
+  <!-- Zoom Modal -->
+  <div id="zoom-modal" class="zoom-modal">
+    <span class="close-zoom">&times;</span>
+    <img class="zoom-content" id="zoom-img" alt="Imagem ampliada">
   </div>
 
   <script src="main.js"></script>

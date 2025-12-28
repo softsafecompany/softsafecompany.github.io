@@ -8,10 +8,24 @@
     "version": "1.3.2",
     "compatibility": "Windows 10/11",
     "description": "O Soft Background Remover é uma ferramenta avançada que utiliza tecnologia de IA para remover fundos de imagens sem esforço. \n Perfeito para criar fotos com aparência profissional para e-commerce, redes sociais e muito mais. \n Ele funciona 100% offline, garantindo a privacidade dos seus dados sem necessidade de conexão com a internet. \n Com uma interface intuitiva, você pode facilmente carregar suas imagens, ajustar configurações e salvar os resultados em diversos formatos. Experimente o Soft Background Remover e transforme suas fotos com facilidade e segurança.\n\n🎨 FUNCIONALIDADES\n\nHOME SCREEN:\n\n ✅ Seleção de cor de fundo \n ✅ Processamento em lote\n✅ Verificação de atualizações\n✅ Drag & Drop de arquivos\n✅ Limpeza de logs\n✅ Janela \"Sobre\"\n\nEDITOR:\n✅ 🤖 Auto Remove (IA)\n✅ ✨ Magic Erase (flood fill)\n✅ 🗑️ Eraser (borracha)\n✅ ✏️ Pencil (restaurador)\n✅ ✋ Pan Mode (mover)\n✅ 🔁 Rotate (girar)\n✅ 🪢 Lasso (seleção livre)\n✅ 🔄 Invert Mask (inverter)\n✅ 🖥️ Fullscreen (tela cheia / Mover header pra baixo)\n\nCONTROLES:\n✅ Slider de tamanho (5-150px)\n✅ Controle de dureza (1-100%)\n✅ Zoom com mouse wheel (10%-500%)\n✅ Undo/Redo (até 15 estados)\n✅ Atalhos personalizáveis\n\nSTATUS: ✅ 100% FUNCIONAL",
-    "download_link": "#"
+    "download_link": "#",
+    "media": [
+      {
+        "type": "image",
+        "src": "assets/Captura de Ecrã (207).png"
+      },
+      {
+        "type": "image",
+        "src": "assets/Captura de Ecrã (206).png"
+      },
+      {
+        "type": "video",
+        "src": "https://www.w3schools.com/html/mov_bbb.mp4"
+      }
+    ]
   },
   {
-    "id": 1,
+    "id": 2,
     "name": "cc",
     "image": "assets/product.png",
     "title": "Removedor de fundo suave",
@@ -22,7 +36,7 @@
     "download_link": "#"
   },
   {
-    "id": 1,
+    "id": 3,
     "name": "Removedor ",
     "image": "assets/product.png",
     "title": "Removedor de fundo suave",
@@ -33,7 +47,7 @@
     "download_link": "#"
   },
   {
-    "id": 1,
+    "id": 4,
     "name": " fundo suave",
     "image": "assets/product.png",
     "title": "Removedor de fundo suave",
