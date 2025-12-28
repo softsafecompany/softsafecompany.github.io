@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomModal = document.getElementById("zoom-modal");
   const zoomImg = document.getElementById("zoom-img");
   const closeZoom = document.querySelector(".close-zoom");
+  const themeToggleBtn = document.getElementById("theme-toggle");
 
   let allProducts = [];
   let currentFilteredProducts = [];
@@ -21,47 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentPage = 1;
   let currentCarouselIndex = 0;
   let currentMedia = [];
-
-  // Inject CSS for animations
-  const style = document.createElement('style');
-  style.innerHTML = `
-    @keyframes skeleton-pulse {
-      0% { opacity: 0.6; }
-      50% { opacity: 0.3; }
-      100% { opacity: 0.6; }
-    }
-    .skeleton-anim {
-      animation: skeleton-pulse 1.5s infinite ease-in-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in {
-      animation: fadeIn 0.5s ease-out forwards;
-    }
-    /* Carousel & Counter CSS */
-    .product-count { text-align: right; margin-bottom: 10px; font-size: 0.9rem; color: #e2e2e2ff; font-weight: 500; }
-    .carousel { position: relative; width: 100%; margin-bottom: 20px; overflow: hidden; border-radius: 8px; background:transparent; height: 300px; }
-    .carousel-inner { display: flex; transition: transform 0.4s ease-in-out; height: 100%; }
-    .carousel-item { min-width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-    .carousel-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .carousel-item video { max-width: 100%; max-height: 100%; }
-    .carousel-control { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; z-index: 10; font-size: 18px; user-select: none; }
-    .carousel-control:hover { background: rgba(0,0,0,0.8); }
-    .carousel-control.prev { left: 0; }
-    .carousel-control.next { right: 0; }
-    /* Dots & Zoom */
-    .carousel-dots { text-align: center; position: absolute; bottom: 10px; width: 100%; z-index: 15; }
-    .dot { cursor: pointer; height: 10px; width: 10px; margin: 0 5px; background-color: #bbb; border-radius: 50%; display: inline-block; transition: background-color 0.6s ease; }
-    .dot.active, .dot:hover { background-color: #717171; }
-    .zoom-modal { display: none; position: fixed; z-index: 2000; padding-top: 50px; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.9); }
-    .zoom-content { margin: auto; display: block; width: 80%; max-width: 700px; animation: zoom 0.6s; }
-    @keyframes zoom { from {transform:scale(0)} to {transform:scale(1)} }
-    .close-zoom { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; transition: 0.3s; cursor: pointer; }
-    .close-zoom:hover, .close-zoom:focus { color: #bbb; text-decoration: none; cursor: pointer; }
-  `;
-  document.head.appendChild(style);
 
   function showSkeleton() {
     productList.innerHTML = "";
@@ -80,13 +40,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Create Clear Button
   const clearBtn = document.createElement("button");
   clearBtn.textContent = "Limpar";
-  clearBtn.style.cssText = "display: none; margin-left: 10px; padding: 10px 15px; background-color: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;";
+  clearBtn.className = "clear-btn";
   if (searchContainer) searchContainer.appendChild(clearBtn);
 
   // Create Load More Button
   const loadMoreBtn = document.createElement("button");
   loadMoreBtn.textContent = "Carregar Mais";
-  loadMoreBtn.style.cssText = "display: none; margin: 20px auto; padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;";
+  loadMoreBtn.className = "load-more-btn";
   productList.parentNode.insertBefore(loadMoreBtn, productList.nextSibling);
 
   // Event Delegation for View More
@@ -192,48 +152,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Carousel Logic
   function renderCarousel() {
+    if (!carouselInner) return;
     carouselInner.innerHTML = "";
-    carouselDots.innerHTML = "";
+    if (carouselDots) carouselDots.innerHTML = "";
     currentMedia.forEach((media, index) => {
       const item = document.createElement("div");
       item.className = "carousel-item";
       if (media.type === "video") {
         item.innerHTML = `<video src="${media.src}" controls></video>`;
       } else {
+        const spinner = document.createElement("div");
+        spinner.className = "carousel-spinner";
+        item.appendChild(spinner);
+
         const img = document.createElement("img");
         img.src = media.src;
         img.alt = "Product Image";
         img.style.cursor = "zoom-in";
+        img.style.display = "none";
+
+        img.onload = () => {
+          spinner.remove();
+          img.style.display = "block";
+        };
+        img.onerror = () => spinner.remove();
+
         img.onclick = () => openZoom(media.src);
         item.appendChild(img);
       }
       carouselInner.appendChild(item);
 
       // Create dot
-      const dot = document.createElement("span");
-      dot.className = "dot";
-      dot.onclick = () => {
-        currentCarouselIndex = index;
-        updateCarouselPosition();
-      };
-      carouselDots.appendChild(dot);
+      if (carouselDots) {
+        const dot = document.createElement("span");
+        dot.className = "dot";
+        dot.onclick = () => {
+          currentCarouselIndex = index;
+          updateCarouselPosition();
+        };
+        carouselDots.appendChild(dot);
+      }
     });
     updateCarouselPosition();
   }
 
   function updateCarouselPosition() {
+    if (!carouselInner) return;
     carouselInner.style.transform = `translateX(-${currentCarouselIndex * 100}%)`;
     // Pause videos when sliding away
     const videos = carouselInner.querySelectorAll("video");
     videos.forEach(v => v.pause());
 
     // Update dots
-    const dots = carouselDots.getElementsByClassName("dot");
-    for (let i = 0; i < dots.length; i++) {
-      dots[i].className = dots[i].className.replace(" active", "");
-    }
-    if (dots[currentCarouselIndex]) {
-      dots[currentCarouselIndex].className += " active";
+    if (carouselDots) {
+      const dots = carouselDots.getElementsByClassName("dot");
+      for (let i = 0; i < dots.length; i++) {
+        dots[i].className = dots[i].className.replace(" active", "");
+      }
+      if (dots[currentCarouselIndex]) {
+        dots[currentCarouselIndex].className += " active";
+      }
     }
   }
 
@@ -255,14 +233,16 @@ document.addEventListener("DOMContentLoaded", () => {
   let touchStartX = 0;
   let touchEndX = 0;
 
-  carouselInner.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-  }, { passive: true });
+  if (carouselInner) {
+    carouselInner.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
 
-  carouselInner.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-  });
+    carouselInner.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    });
+  }
 
   function handleSwipe() {
     if (currentMedia.length <= 1) return;
@@ -308,21 +288,21 @@ document.addEventListener("DOMContentLoaded", () => {
     currentCarouselIndex = 0;
     if (product.media && product.media.length > 0) {
       currentMedia = product.media;
-      carouselContainer.style.display = "block";
+      if (carouselContainer) carouselContainer.style.display = "block";
       // Show/Hide controls based on count
       if (currentMedia.length > 1) {
-        btnPrev.style.display = "block";
-        btnNext.style.display = "block";
+        if (btnPrev) btnPrev.style.display = "block";
+        if (btnNext) btnNext.style.display = "block";
       } else {
-        btnPrev.style.display = "none";
-        btnNext.style.display = "none";
+        if (btnPrev) btnPrev.style.display = "none";
+        if (btnNext) btnNext.style.display = "none";
       }
     } else {
       // Fallback to single image if no media array
       currentMedia = [{ type: 'image', src: product.image }];
-      carouselContainer.style.display = "block";
-      btnPrev.style.display = "none";
-      btnNext.style.display = "none";
+      if (carouselContainer) carouselContainer.style.display = "block";
+      if (btnPrev) btnPrev.style.display = "none";
+      if (btnNext) btnNext.style.display = "none";
     }
     renderCarousel();
 
@@ -353,6 +333,14 @@ document.addEventListener("DOMContentLoaded", () => {
       modal.style.display = "none";
     }
   });
+
+  // Theme Toggle Logic
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      themeToggleBtn.textContent = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
+    });
+  }
 });
 
 function scrollToProducts() {
