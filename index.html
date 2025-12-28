@@ -15,7 +15,7 @@
       <h2>SoftSafe</h2>
     </div>
     <nav>
-      <a href="#produtos">Produtos</a>
+      <a href="index.html">Produtos</a>
       <a href="#sobre">Sobre</a>
       <a href="#contato">Contato</a>
     </nav>
@@ -29,11 +29,8 @@
 
   <section id="produtos" class="produtos">
     <h3>Nossos Programas</h3>
-
-    <div class="produto">
-      <h4>Soft Safe Tool</h4>
-      <p>Ferramenta avançada para otimização e segurança do sistema.</p>
-      <button>Comprar</button>
+    <div id="product-list" class="product-list">
+      <!-- Os produtos serão inseridos aqui via JavaScript -->
     </div>
   </section>
 
@@ -45,6 +42,19 @@
   <footer id="contato" class="footer">
     <p>&copy; 2025 Soft Safe — Todos os direitos reservados</p>
   </footer>
+
+  <!-- Modal -->
+  <div id="product-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modal-title"></h2>
+      <p><strong>Tamanho:</strong> <span id="modal-size"></span></p>
+      <p><strong>Versão:</strong> <span id="modal-version"></span></p>
+      <p><strong>Compatibilidade:</strong> <span id="modal-compatibility"></span></p>
+      <p id="modal-description"></p>
+      <button class="download-btn">Download</button>
+    </div>
+  </div>
 
   <script src="main.js"></script>
 </body>
