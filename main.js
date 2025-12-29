@@ -710,12 +710,15 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         ${expandBtn}
         
-        <div style="display:flex; gap:10px; margin-top:10px;">
+        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap: wrap;">
           <button class="like-btn" onclick="toggleNewsLike(${item.id})" id="news-like-btn-${item.id}">
             ❤️ <span id="news-like-count-${item.id}">0</span>
           </button>
           <button class="like-btn" onclick="openNewsModal(${item.id})">
-            💬 Comentários
+            💬 <span id="news-comment-count-${item.id}">0</span>
+          </button>
+          <button class="like-btn" onclick="shareNews(${item.id})">
+            🔗
           </button>
         </div>
       `;
@@ -728,6 +731,9 @@ document.addEventListener("DOMContentLoaded", () => {
           const data = docSnap.data();
           const countSpan = document.getElementById(`news-like-count-${item.id}`);
           if (countSpan) countSpan.textContent = data.likesCount || 0;
+
+          const commentCountSpan = document.getElementById(`news-comment-count-${item.id}`);
+          if (commentCountSpan) commentCountSpan.textContent = data.commentsCount || 0;
 
           // Verificar se usuário atual curtiu (requer subcoleção ou array, usando array simples para demo)
           // Para produção robusta, use subcoleção 'likes'. Aqui simplificado:
@@ -987,6 +993,45 @@ document.addEventListener("DOMContentLoaded", () => {
   // Close contact modal on outside click
   window.addEventListener("click", (e) => { if (e.target == contactModal) closeModalWithFade(contactModal); });
 
+  window.shareNews = function (id) {
+    const item = allNews.find(n => n.id === id);
+    if (!item) return;
+
+    const title = getLocalized(item, 'title');
+    const text = getLocalized(item, 'text');
+    const url = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({
+        title: title,
+        text: text,
+        url: url
+      }).catch(console.error);
+    } else {
+      const shareModal = document.getElementById("share-modal");
+      if (shareModal) {
+        const shareWhatsapp = document.getElementById("share-whatsapp");
+        const shareFacebook = document.getElementById("share-facebook");
+        const shareX = document.getElementById("share-x");
+        const shareCopy = document.getElementById("share-copy");
+        const shareText = `Confira: ${title}`;
+
+        if (shareWhatsapp) shareWhatsapp.href = `https://wa.me/?text=${encodeURIComponent(shareText + " " + url)}`;
+        if (shareFacebook) shareFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        if (shareX) shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`;
+
+        if (shareCopy) {
+          shareCopy.onclick = () => {
+            navigator.clipboard.writeText(`${shareText} ${url}`).then(() => {
+              customAlert("Link copiado!", "Sucesso");
+            });
+          };
+        }
+        shareModal.style.display = "block";
+      }
+    }
+  };
+
   // Expose Like functions to window
   window.toggleNewsLike = function (id) {
     if (!currentUser) return customAlert("Aguarde a inicialização...", "Sistema");
@@ -1048,7 +1093,11 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     addDoc(collection(db, "news_stats", String(newsId), "comments"), comment)
-      .then(() => { if (callback) callback(); });
+      .then(() => {
+        const statsRef = doc(db, "news_stats", String(newsId));
+        setDoc(statsRef, { commentsCount: increment(1) }, { merge: true });
+        if (callback) callback();
+      });
   }
 
   function loadComments(newsId, containerId) {
@@ -1105,10 +1154,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${c.text}</p>
           ${c.image ? `<img src="${c.image}" class="comment-img" style="cursor:zoom-in">` : ''}
           <div class="comment-actions">
-             <button class="comment-like-btn ${isLiked ? 'liked' : ''}" onclick="toggleCommentLike(${newsId}, ${c.id})">
+             <button class="comment-like-btn ${isLiked ? 'liked' : ''}" onclick="toggleCommentLike(${newsId}, '${c.id}')">
                👍 <span id="comment-like-count-${c.id}">${c.likes || 0}</span>
              </button>
-             <button class="reply-btn" onclick="toggleReplyForm(${c.id})">Responder</button>
+             <button class="reply-btn" onclick="toggleReplyForm('${c.id}')">Responder</button>
           </div>
           
           <div id="reply-form-${c.id}" class="reply-form-container">

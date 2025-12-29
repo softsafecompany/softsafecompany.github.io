@@ -1956,3 +1956,13 @@ body.dark-mode .custom-dialog-input {
     padding: 0 10px;
   }
 }
+
+@media (max-width: 600px) {
+  .news-search-container {
+    flex-direction: column;
+  }
+
+  .news-search-btn {
+    width: 100%;
+  }
+}
