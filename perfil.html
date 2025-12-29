@@ -25,14 +25,28 @@
 
     <div class="profile-container">
       <div class="profile-header">
-        <img
-          id="profile-img"
-          src="assets/default-avatar.png"
-          alt="Avatar"
-          class="profile-avatar"
+        <div id="profile-img-container" class="profile-img-wrapper">
+          <img
+            id="profile-img"
+            src="assets/default-avatar.png"
+            alt="Avatar"
+            class="profile-avatar"
+          />
+          <div class="profile-overlay"><i class="fas fa-camera"></i></div>
+        </div>
+        <input
+          type="file"
+          id="profile-upload"
+          accept="image/*"
+          style="display: none"
         />
         <div>
-          <h2 id="profile-name">Carregando...</h2>
+          <div style="display: flex; align-items: center; gap: 10px">
+            <h2 id="profile-name" style="margin: 0">Carregando...</h2>
+            <button id="edit-name-btn" class="edit-btn" title="Editar nome">
+              <i class="fas fa-pen"></i>
+            </button>
+          </div>
           <p id="profile-email">...</p>
         </div>
       </div>

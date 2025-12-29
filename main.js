@@ -85,6 +85,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileName = document.getElementById("profile-name");
   const profileEmail = document.getElementById("profile-email");
   const profileImg = document.getElementById("profile-img");
+  const profileImgContainer = document.getElementById("profile-img-container");
+  const profileUpload = document.getElementById("profile-upload");
+  const editNameBtn = document.getElementById("edit-name-btn");
 
   // Inicializar currentLang no topo para evitar ReferenceError
   let currentLang = localStorage.getItem("softsafe_lang") || "pt";
@@ -194,16 +197,6 @@ document.addEventListener("DOMContentLoaded", () => {
     showToast("Conexão restabelecida!", "success");
   });
 
-  // Autenticação Anônima (Movido para dentro do DOMContentLoaded para usar o showToast)
-  signInAnonymously(auth).catch((error) => {
-    console.error("Erro Auth:", error);
-    if (error.code === 'auth/configuration-not-found') {
-      showToast("Configuração pendente: Ative a Autenticação Anônima no Firebase Console.", "error");
-    } else {
-      showToast("Erro ao conectar com o servidor.", "error");
-    }
-  });
-
   // --- Contact Modal Logic ---
   // Intercept links to #contato
   document.querySelectorAll('a[href="#contato"]').forEach(link => {
@@ -276,9 +269,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Populate Profile Page
         if (profileName) {
-          profileName.textContent = user.displayName || "Usuário";
+          // Listen to Firestore for updates (Custom Name / Custom Photo)
+          onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              profileName.textContent = data.displayName || user.displayName || "Usuário";
+              if (profileImg) profileImg.src = data.photoURL || user.photoURL || "assets/default-avatar.png";
+            } else {
+              // Fallback / Init
+              profileName.textContent = user.displayName || "Usuário";
+              if (profileImg && user.photoURL) profileImg.src = user.photoURL;
+              // Create doc if missing
+              setDoc(doc(db, "users", user.uid), { displayName: user.displayName, photoURL: user.photoURL, email: user.email }, { merge: true });
+            }
+          });
           if (profileEmail) profileEmail.textContent = user.email;
-          if (profileImg && user.photoURL) profileImg.src = user.photoURL;
         }
       } else {
         // Usuário Anônimo -> Botão Login
@@ -290,6 +295,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (profileName) window.location.href = "index.html";
       }
     } else {
+      // Se nenhum usuário estiver logado (nem Google, nem Anônimo), autenticar anonimamente
+      signInAnonymously(auth).catch((error) => {
+        console.error("Erro Auth:", error);
+      });
+
       if (unsubscribeNotifications) {
         unsubscribeNotifications();
         unsubscribeNotifications = null;
@@ -302,6 +312,59 @@ document.addEventListener("DOMContentLoaded", () => {
       if (profileName) window.location.href = "index.html";
     }
   });
+
+  // Profile Image Upload & Resize Logic
+  function resizeImage(file, maxWidth, maxHeight, callback) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = width * ratio;
+          height = height * ratio;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        // Quality 0.8 JPEG
+        callback(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (profileImgContainer && profileUpload) {
+    profileImgContainer.addEventListener("click", () => profileUpload.click());
+    profileUpload.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        resizeImage(e.target.files[0], 500, 500, (base64) => {
+          if (currentUser) {
+            updateDoc(doc(db, "users", currentUser.uid), { photoURL: base64 })
+              .then(() => showToast("Foto de perfil atualizada!", "success"))
+              .catch((err) => console.error(err));
+          }
+        });
+      }
+    });
+  }
+
+  if (editNameBtn) {
+    editNameBtn.addEventListener("click", () => {
+      customPrompt("Digite seu novo nome:", "Alterar Nome").then((newName) => {
+        if (newName && currentUser) {
+          updateDoc(doc(db, "users", currentUser.uid), { displayName: newName })
+            .then(() => showToast("Nome atualizado!", "success"))
+            .catch((err) => console.error(err));
+        }
+      });
+    });
+  }
 
   // Logout Logic
   if (logoutBtn) {
