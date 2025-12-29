@@ -170,7 +170,13 @@
     <div id="zoom-modal" class="zoom-modal">
       <span class="close-zoom">&times;</span>
       <div class="zoom-spinner" id="zoom-spinner" style="display: none"></div>
-      <img class="zoom-content" id="zoom-img" alt="Imagem ampliada" />
+      <img
+        class="zoom-content"
+        id="zoom-img"
+        alt="Imagem ampliada"
+        onload="document.getElementById('zoom-spinner').style.display='none'"
+        onerror="document.getElementById('zoom-spinner').style.display='none'"
+      />
       <button id="reset-zoom" class="reset-zoom-btn">Resetar Zoom</button>
     </div>
 
@@ -284,6 +290,9 @@
         <div id="form-login" class="auth-form">
           <input type="email" id="login-email" placeholder="E-mail" required />
           <input type="password" id="login-pass" placeholder="Senha" required />
+          <a href="#" id="forgot-password-link" class="forgot-password-link"
+            >Esqueci minha senha</a
+          >
           <button
             id="manual-login-btn"
             class="download-btn"
@@ -301,6 +310,18 @@
             placeholder="Senha"
             required
           />
+          <div class="password-strength-container">
+            <div id="signup-strength-bar" class="password-strength-bar"></div>
+          </div>
+          <p
+            id="signup-strength-text"
+            style="
+              font-size: 0.75rem;
+              text-align: left;
+              margin-top: 2px;
+              color: #666;
+            "
+          ></p>
           <input
             type="password"
             id="signup-confirm"

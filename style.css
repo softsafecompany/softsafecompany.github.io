@@ -2473,6 +2473,34 @@ body.dark-mode .auth-separator span {
   /* Match dark modal bg */
 }
 
+.password-strength-container {
+  width: 100%;
+  height: 4px;
+  background: #eee;
+  margin-top: 5px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.password-strength-bar {
+  height: 100%;
+  width: 0;
+  transition: width 0.3s, background-color 0.3s;
+}
+
+.forgot-password-link {
+  font-size: 0.8rem;
+  color: #1f4cff;
+  text-decoration: none;
+  align-self: flex-end;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
 /* Full Screen Spinner */
 .loading-overlay {
   position: fixed;

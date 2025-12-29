@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getFirestore, collection, doc, getDoc, setDoc, updateDoc, increment, onSnapshot, addDoc, query, orderBy, getDocs, where, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 // SUBSTITUA COM SUAS CREDENCIAIS REAIS DO CONSOLE DO FIREBASE
@@ -92,6 +92,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileImgContainer = document.getElementById("profile-img-container");
   const profileUpload = document.getElementById("profile-upload");
   const editNameBtn = document.getElementById("edit-name-btn");
+  const resetPasswordBtn = document.getElementById("reset-password-btn");
+  const signupPassInput = document.getElementById("signup-pass");
+  const signupStrengthBar = document.getElementById("signup-strength-bar");
+  const signupStrengthText = document.getElementById("signup-strength-text");
+  const forgotPasswordLink = document.getElementById("forgot-password-link");
 
   // Auth Elements
   const tabLogin = document.getElementById("tab-login");
@@ -2437,6 +2442,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  window.customConfirm = function (message, title = "Confirmação", okText = "Sim", cancelText = "Não") {
+    return new Promise((resolve) => {
+      dialogTitle.textContent = title;
+      dialogMessage.textContent = message;
+      dialogInputContainer.style.display = 'none';
+      
+      dialogOk.textContent = okText;
+      dialogCancel.textContent = cancelText;
+      dialogCancel.style.display = 'inline-block';
+      
+      dialogOverlay.classList.add('active');
+
+      dialogOk.onclick = () => {
+        dialogOverlay.classList.remove('active');
+        dialogOk.textContent = "OK"; // Reset
+        resolve(true);
+      };
+      dialogCancel.onclick = () => {
+        dialogOverlay.classList.remove('active');
+        dialogOk.textContent = "OK"; // Reset
+        resolve(false);
+      };
+    });
+  };
+
   // Função de tradução automática (Google GTX)
   async function translateText(text, targetLang) {
     if (!text) return "";
@@ -2532,6 +2562,79 @@ document.addEventListener("DOMContentLoaded", () => {
     langToggleBtn.addEventListener("click", () => {
       const newLang = currentLang === 'pt' ? 'en' : 'pt';
       updateLanguage(newLang);
+    });
+  }
+
+  // --- Reset Password Logic (Profile Page) ---
+  if (resetPasswordBtn) {
+    resetPasswordBtn.addEventListener("click", () => {
+      if (currentUser && currentUser.email) {
+        customConfirm(`Enviar e-mail de redefinição para ${currentUser.email}?`, "Redefinir Senha").then((confirmed) => {
+          if (confirmed) {
+            toggleLoading(true);
+            sendPasswordResetEmail(auth, currentUser.email)
+              .then(() => { toggleLoading(false); showToast("E-mail enviado!", "success"); })
+              .catch((err) => { toggleLoading(false); showToast("Erro: " + err.message, "error"); });
+          }
+        });
+      } else {
+        showToast("E-mail não disponível.", "error");
+      }
+    });
+  }
+
+  // --- Password Strength Logic ---
+  if (signupPassInput && signupStrengthBar && signupStrengthText) {
+    signupPassInput.addEventListener("input", () => {
+      const val = signupPassInput.value;
+      let strength = 0;
+      
+      if (val.length >= 6) strength++;
+      if (val.length >= 8 && /[0-9]/.test(val)) strength++;
+      if (val.length >= 10 && /[!@#$%^&*]/.test(val) && /[A-Z]/.test(val)) strength++;
+
+      let color = "#eee";
+      let width = "0%";
+      let text = "";
+
+      if (val.length > 0) {
+        if (strength === 0 || strength === 1) {
+          color = "#e74c3c"; width = "33%"; text = "Fraca";
+        } else if (strength === 2) {
+          color = "#f1c40f"; width = "66%"; text = "Média";
+        } else if (strength >= 3) {
+          color = "#2ecc71"; width = "100%"; text = "Forte";
+        }
+      }
+
+      signupStrengthBar.style.backgroundColor = color;
+      signupStrengthBar.style.width = width;
+      signupStrengthText.textContent = text;
+      signupStrengthText.style.color = color;
+    });
+  }
+
+  // --- Forgot Password Logic (Login Modal) ---
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (loginModal) closeModalWithFade(loginModal);
+      
+      customPrompt("Digite seu e-mail para redefinir a senha:", "Recuperar Senha").then((email) => {
+        if (email) {
+          toggleLoading(true);
+          sendPasswordResetEmail(auth, email)
+            .then(() => {
+              toggleLoading(false);
+              showToast("E-mail de redefinição enviado!", "success");
+            })
+            .catch((error) => {
+              toggleLoading(false);
+              console.error(error);
+              showToast("Erro: " + error.message, "error");
+            });
+        }
+      });
     });
   }
 });
