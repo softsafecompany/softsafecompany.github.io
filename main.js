@@ -1,3 +1,30 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, increment, onSnapshot, addDoc, query, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// --- CONFIGURAÇÃO DO FIREBASE ---
+// SUBSTITUA COM SUAS CREDENCIAIS REAIS DO CONSOLE DO FIREBASE
+// O erro "auth/api-key-not-valid" ocorre porque estas chaves abaixo são exemplos.
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY_AQUI",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  projectId: "SEU_PROJECT_ID",
+  storageBucket: "SEU_PROJETO.appspot.com",
+  messagingSenderId: "SEU_SENDER_ID",
+  appId: "SEU_APP_ID"
+};
+
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let currentUser = null;
+let unsubscribeComments = null; // To manage real-time listener
+
+// Autenticação Anônima para identificar o usuário (Tema, Likes)
+signInAnonymously(auth).catch((error) => console.error("Erro Auth:", error));
+
 document.addEventListener("DOMContentLoaded", () => {
   const productList = document.getElementById("product-list");
   const modal = document.getElementById("product-modal");
@@ -14,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomModal = document.getElementById("zoom-modal");
   const zoomImg = document.getElementById("zoom-img");
   const closeZoom = document.querySelector(".close-zoom");
+  const zoomSpinner = document.getElementById("zoom-spinner");
   const themeToggleBtn = document.getElementById("theme-toggle");
   const suggestionsContainer = document.getElementById("suggestions-container");
   const resetZoomBtn = document.getElementById("reset-zoom");
@@ -35,6 +63,84 @@ document.addEventListener("DOMContentLoaded", () => {
   const newsPrev = document.getElementById("news-carousel-prev");
   const newsNext = document.getElementById("news-carousel-next");
   const newsDots = document.getElementById("news-carousel-dots");
+  const newsSearchInput = document.getElementById("news-search-input");
+  const contactModal = document.getElementById("contact-modal");
+  const closeContactBtn = document.querySelector(".close-contact");
+  const contactForm = document.getElementById("contact-form");
+
+  // --- Contact Modal Logic ---
+  // Intercept links to #contato
+  document.querySelectorAll('a[href="#contato"]').forEach(link => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (contactModal) contactModal.style.display = "block";
+      // Close mobile menu if open
+      if (navMenu && navMenu.classList.contains("active")) {
+        navMenu.classList.remove("active");
+        document.body.classList.remove("menu-open");
+        if (menuOverlay) menuOverlay.classList.remove("active");
+      }
+    });
+  });
+
+  if (closeContactBtn) {
+    closeContactBtn.addEventListener("click", () => {
+      if (contactModal) closeModalWithFade(contactModal);
+    });
+  }
+
+  if (contactForm) {
+    contactForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("contact-name").value;
+      const email = document.getElementById("contact-email").value;
+      const message = document.getElementById("contact-message").value;
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        alert("Por favor, insira um endereço de email válido.");
+        return;
+      }
+
+      addDoc(collection(db, "messages"), {
+        name, email, message, date: new Date().toISOString()
+      }).then(() => {
+        alert("Mensagem enviada com sucesso!");
+        contactForm.reset();
+        closeModalWithFade(contactModal);
+      }).catch((err) => {
+        console.error(err);
+        alert("Erro ao enviar mensagem.");
+      });
+    });
+  }
+
+  // --- Lógica de Tema com Firebase ---
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      currentUser = user;
+      // Carregar tema salvo
+      const userRef = doc(db, "users", user.uid);
+      getDoc(userRef).then((docSnap) => {
+        if (docSnap.exists() && docSnap.data().theme === 'dark') {
+          document.body.classList.add("dark-mode");
+          if (themeToggleBtn) themeToggleBtn.textContent = "☀️";
+        }
+      });
+    }
+  });
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      const isDark = document.body.classList.contains("dark-mode");
+      themeToggleBtn.textContent = isDark ? "☀️" : "🌙";
+
+      if (currentUser) {
+        setDoc(doc(db, "users", currentUser.uid), { theme: isDark ? 'dark' : 'light' }, { merge: true });
+      }
+    });
+  }
 
   // Burger Menu Logic
   if (burgerMenu && navMenu) {
@@ -253,10 +359,21 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="produto fade-in" style="animation-delay: ${index * 0.1}s">
             <img src="${product.image}" alt="${product.name}">
             <h4>${product.name}</h4>
+            <div class="product-views" id="product-views-${product.id}">
+               👁️ <span class="view-count">0</span> visualizações
+            </div>
             <button class="view-more-btn" data-id="${product.id}">Ver Mais</button>
           </div>
         `;
       productsHTML += productCard;
+
+      // Ouvir atualizações de visualizações em tempo real
+      onSnapshot(doc(db, "products", String(product.id)), (doc) => {
+        if (doc.exists()) {
+          const countElem = document.querySelector(`#product-views-${product.id} .view-count`);
+          if (countElem) countElem.textContent = doc.data().clicks || 0;
+        }
+      });
     });
     productList.insertAdjacentHTML('beforeend', productsHTML);
 
@@ -324,6 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // News Logic
   let allNews = [];
   let currentNewsPage = 1;
+  let filteredNews = [];
   const NEWS_PER_PAGE = 3;
   let loadMoreNewsBtn;
   const commentSortPrefs = {};
@@ -344,8 +462,23 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(res => res.json())
       .then(data => {
         allNews = data;
+        filteredNews = data;
         renderNewsBatch();
       });
+
+    // News Search Logic
+    if (newsSearchInput) {
+      newsSearchInput.addEventListener("input", (e) => {
+        const term = e.target.value.toLowerCase();
+        filteredNews = allNews.filter(n =>
+          n.title.toLowerCase().includes(term) ||
+          n.text.toLowerCase().includes(term) ||
+          (n.extra_text && n.extra_text.toLowerCase().includes(term))
+        );
+        currentNewsPage = 1;
+        renderNewsBatch();
+      });
+    }
   }
 
   function renderNewsBatch() {
@@ -353,12 +486,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const start = (currentNewsPage - 1) * NEWS_PER_PAGE;
     const end = currentNewsPage * NEWS_PER_PAGE;
-    const newsToRender = allNews.slice(start, end);
+    const newsToRender = filteredNews.slice(start, end);
 
     newsToRender.forEach(item => {
-      const likeData = getNewsLikeState(item.id);
-      const likeClass = likeData.liked ? "liked" : "";
-
       const card = document.createElement("div");
       card.className = "news-card";
 
@@ -373,52 +503,28 @@ document.addEventListener("DOMContentLoaded", () => {
         <img src="${item.image}" alt="${item.title}">
         <p>${item.text}</p>
         ${extraContent}
-        <button class="like-btn ${likeClass}" onclick="toggleNewsLike(${item.id})" id="news-like-btn-${item.id}">
-          ❤️ <span id="news-like-count-${item.id}">${likeData.count}</span>
+        <button class="like-btn" onclick="toggleNewsLike(${item.id})" id="news-like-btn-${item.id}">
+          ❤️ <span id="news-like-count-${item.id}">0</span>
         </button>
-        
-        <div class="comments-section">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h4 style="margin:0;">Comentários</h4>
-            <select class="sort-comments-select" onchange="sortComments(${item.id}, this.value)">
-              <option value="newest">Mais Recentes</option>
-              <option value="oldest">Mais Antigos</option>
-              <option value="likes">Mais Curtidos</option>
-            </select>
-          </div>
-          <div class="comment-list" id="comments-${item.id}"></div>
-          <form class="comment-form" data-id="${item.id}">
-            <input type="text" placeholder="Seu nome" required>
-            <textarea placeholder="Seu comentário" required></textarea>
-            <input type="file" accept="image/*">
-            <button type="submit" class="download-btn" style="width: fit-content;">Comentar</button>
-          </form>
-        </div>
       `;
-      const form = card.querySelector(".comment-form");
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const newsId = form.getAttribute("data-id");
-        const name = form.querySelector("input[type='text']").value;
-        const text = form.querySelector("textarea").value;
-        const fileInput = form.querySelector("input[type='file']");
-
-        if (fileInput.files.length > 0) {
-          compressImage(fileInput.files[0], (compressedImg) => {
-            saveComment(newsId, name, text, compressedImg);
-            form.reset();
-          });
-        } else {
-          saveComment(newsId, name, text, null);
-          form.reset();
-        }
-      });
 
       newsList.appendChild(card);
-      loadComments(item.id);
+
+      // Carregar Likes do Firestore
+      onSnapshot(doc(db, "news_stats", String(item.id)), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const countSpan = document.getElementById(`news-like-count-${item.id}`);
+          if (countSpan) countSpan.textContent = data.likesCount || 0;
+
+          // Verificar se usuário atual curtiu (requer subcoleção ou array, usando array simples para demo)
+          // Para produção robusta, use subcoleção 'likes'. Aqui simplificado:
+          // A verificação visual de "liked" depende de ler a subcoleção, faremos isso no toggle ou carga separada.
+        }
+      });
     });
 
-    if (allNews.length > end) {
+    if (filteredNews.length > end) {
       loadMoreNewsBtn.style.display = "block";
     } else {
       loadMoreNewsBtn.style.display = "none";
@@ -438,13 +544,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const item = document.createElement("div");
       item.className = "carousel-item";
 
-      const img = document.createElement("img");
-      img.src = media.src;
-      img.alt = "News Image";
-      img.style.display = "block";
-      img.onclick = () => openZoom(media.src);
+      if (media.type === 'video') {
+        // YouTube Embed
+        item.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${media.src}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+      } else {
+        const img = document.createElement("img");
+        img.src = media.src;
+        img.alt = "News Image";
+        img.style.display = "block";
+        img.onclick = () => openZoom(media.src);
+        item.appendChild(img);
+      }
 
-      item.appendChild(img);
       newsCarouselInner.appendChild(item);
 
       if (newsDots) {
@@ -488,6 +599,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Helper para extrair ID do YouTube
+  function getYoutubeId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  }
+
   // News Modal Logic
   window.openNewsModal = function (id) {
     const item = allNews.find(n => n.id === id);
@@ -498,8 +616,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Prepare Media
     currentNewsMedia = [];
-    if (item.image) currentNewsMedia.push({ src: item.image });
-    if (item.extra_image) currentNewsMedia.push({ src: item.extra_image });
+    if (item.image) currentNewsMedia.push({ type: 'image', src: item.image });
+    if (item.extra_image) currentNewsMedia.push({ type: 'image', src: item.extra_image });
+
+    // Check for Video (YouTube)
+    if (item.video) {
+      const ytId = getYoutubeId(item.video);
+      if (ytId) currentNewsMedia.push({ type: 'video', src: ytId });
+    }
+
+    // Incrementar Views da Notícia no Firestore
+    updateDoc(doc(db, "news_stats", String(id)), { views: increment(1) }).catch(() => {
+      setDoc(doc(db, "news_stats", String(id)), { views: 1, likesCount: 0 }, { merge: true });
+    });
 
     const imgElem = document.getElementById("news-modal-image");
 
@@ -527,9 +656,49 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("news-modal-body").innerHTML = bodyContent;
 
     const actionsDiv = document.getElementById("news-modal-actions");
-    actionsDiv.innerHTML = "";
-    if (item.link && item.link !== "#") {
-      actionsDiv.innerHTML = `<a href="${item.link}" target="_blank" class="download-btn">Visitar Link Original</a>`;
+    actionsDiv.innerHTML = `<button class="download-btn" onclick="closeModalWithFade(document.getElementById('news-modal'))">Fechar</button>`;
+
+    // --- Comments in Modal ---
+    const commentsContainer = document.getElementById("news-modal-comments-container");
+    if (commentsContainer) {
+      commentsContainer.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin:0;">Comentários</h3>
+          <select class="sort-comments-select" onchange="sortComments(${id}, this.value)">
+            <option value="newest">Mais Recentes</option>
+            <option value="oldest">Mais Antigos</option>
+            <option value="likes">Mais Curtidos</option>
+          </select>
+        </div>
+        <div class="comment-list" id="modal-comments-list-${id}"></div>
+        <form class="comment-form" id="modal-comment-form-${id}" style="margin-top:20px;">
+          <input type="text" id="modal-comment-name-${id}" placeholder="Seu nome" required>
+          <textarea id="modal-comment-text-${id}" placeholder="Seu comentário" required></textarea>
+          <input type="file" id="modal-comment-file-${id}" accept="image/*">
+          <button type="submit" class="download-btn" style="width: fit-content;">Comentar</button>
+        </form>
+      `;
+
+      const form = document.getElementById(`modal-comment-form-${id}`);
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = document.getElementById(`modal-comment-name-${id}`).value;
+        const text = document.getElementById(`modal-comment-text-${id}`).value;
+        const fileInput = document.getElementById(`modal-comment-file-${id}`);
+
+        const callback = () => {
+          // Limpar apenas texto e arquivo, manter o nome
+          document.getElementById(`modal-comment-text-${id}`).value = "";
+          document.getElementById(`modal-comment-file-${id}`).value = "";
+        };
+        if (fileInput.files.length > 0) {
+          compressImage(fileInput.files[0], (img) => saveComment(id, name, text, img, null, callback));
+        } else {
+          saveComment(id, name, text, null, null, callback);
+        }
+      });
+
+      loadComments(id, `modal-comments-list-${id}`);
     }
 
     if (newsModal) newsModal.style.display = "block";
@@ -541,35 +710,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Close contact modal on outside click
+  window.addEventListener("click", (e) => { if (e.target == contactModal) closeModalWithFade(contactModal); });
+
   // Expose Like functions to window
   window.toggleNewsLike = function (id) {
-    const storage = JSON.parse(localStorage.getItem("softsafe_news_likes_data") || "{}");
-    if (!storage[id]) storage[id] = { count: 0, liked: false };
+    if (!currentUser) return alert("Aguarde a inicialização...");
 
-    if (storage[id].liked) {
-      storage[id].count--;
-      storage[id].liked = false;
-    } else {
-      storage[id].count++;
-      storage[id].liked = true;
-    }
-    localStorage.setItem("softsafe_news_likes_data", JSON.stringify(storage));
+    const likeRef = doc(db, "news_stats", String(id), "likes", currentUser.uid);
+    const statsRef = doc(db, "news_stats", String(id));
 
-    const btn = document.getElementById(`news-like-btn-${id}`);
-    const countSpan = document.getElementById(`news-like-count-${id}`);
-    if (btn) btn.classList.toggle("liked", storage[id].liked);
-    if (countSpan) countSpan.textContent = storage[id].count;
+    getDoc(likeRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        // Remover Like
+        setDoc(likeRef, { active: false }); // Ou deleteDoc
+        updateDoc(statsRef, { likesCount: increment(-1) });
+        document.getElementById(`news-like-btn-${id}`).classList.remove("liked");
+      } else {
+        // Adicionar Like
+        setDoc(likeRef, { active: true });
+        updateDoc(statsRef, { likesCount: increment(1) });
+        document.getElementById(`news-like-btn-${id}`).classList.add("liked");
+      }
+    });
   };
 
   window.sortComments = function (newsId, criteria) {
     commentSortPrefs[newsId] = criteria;
-    loadComments(newsId);
+    // Re-render is handled by onSnapshot if we just update sort pref, but we might need to re-trigger render
+    loadComments(newsId, `modal-comments-list-${newsId}`);
   };
-
-  function getNewsLikeState(id) {
-    const storage = JSON.parse(localStorage.getItem("softsafe_news_likes_data") || "{}");
-    return storage[id] || { count: 0, liked: false };
-  }
 
   function compressImage(file, callback) {
     const reader = new FileReader();
@@ -590,57 +760,69 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function saveComment(newsId, name, text, image, parentId = null) {
-    const comment = { id: Date.now(), name, text, image, date: new Date().toLocaleDateString(), likes: 0, parentId: parentId };
-    const key = `softsafe_comments_${newsId}`;
-    const comments = JSON.parse(localStorage.getItem(key) || "[]");
-    comments.push(comment);
-    localStorage.setItem(key, JSON.stringify(comments));
-    loadComments(newsId);
+  function saveComment(newsId, name, text, image, parentId = null, callback = null) {
+    const comment = {
+      name,
+      text,
+      image,
+      date: new Date().toLocaleDateString(),
+      likes: 0,
+      parentId: parentId,
+      timestamp: new Date()
+    };
+
+    addDoc(collection(db, "news_stats", String(newsId), "comments"), comment)
+      .then(() => { if (callback) callback(); });
   }
 
-  function loadComments(newsId) {
-    const key = `softsafe_comments_${newsId}`;
-    const comments = JSON.parse(localStorage.getItem(key) || "[]");
-    const container = document.getElementById(`comments-${newsId}`);
-    container.innerHTML = "";
+  function loadComments(newsId, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-    const userLikedComments = JSON.parse(localStorage.getItem("softsafe_user_liked_comments") || "[]");
+    if (unsubscribeComments) unsubscribeComments(); // Detach previous listener
 
-    // Build Hierarchy
-    const commentMap = {};
-    const roots = [];
+    const q = query(collection(db, "news_stats", String(newsId), "comments"), orderBy("timestamp", "desc"));
 
-    // Initialize map
-    comments.forEach(c => {
-      c.replies = [];
-      commentMap[c.id] = c;
-    });
+    unsubscribeComments = onSnapshot(q, (querySnapshot) => {
+      const comments = [];
+      querySnapshot.forEach((doc) => comments.push({ id: doc.id, ...doc.data() }));
 
-    // Link parents
-    comments.forEach(c => {
-      if (c.parentId && commentMap[c.parentId]) {
-        commentMap[c.parentId].replies.push(c);
-      } else {
-        roots.push(c);
+      container.innerHTML = "";
+
+      // Build Hierarchy
+      const commentMap = {};
+      const roots = [];
+
+      // Initialize map
+      comments.forEach(c => {
+        c.replies = [];
+        commentMap[c.id] = c;
+      });
+
+      // Link parents
+      comments.forEach(c => {
+        if (c.parentId && commentMap[c.parentId]) {
+          commentMap[c.parentId].replies.push(c);
+        } else {
+          roots.push(c);
+        }
+      });
+
+      const sortBy = commentSortPrefs[newsId] || 'newest';
+      if (sortBy === 'newest') {
+        roots.sort((a, b) => b.id - a.id);
+      } else if (sortBy === 'oldest') {
+        roots.sort((a, b) => a.id - b.id);
+      } else if (sortBy === 'likes') {
+        roots.sort((a, b) => (b.likes || 0) - (a.likes || 0));
       }
-    });
 
-    const sortBy = commentSortPrefs[newsId] || 'newest';
-    if (sortBy === 'newest') {
-      roots.sort((a, b) => b.id - a.id);
-    } else if (sortBy === 'oldest') {
-      roots.sort((a, b) => a.id - b.id);
-    } else if (sortBy === 'likes') {
-      roots.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-    }
-
-    function renderCommentNode(c) {
-      const isLiked = userLikedComments.includes(c.id);
-      const div = document.createElement("div");
-      div.className = "comment";
-      div.id = `comment-${c.id}`;
-      div.innerHTML = `
+      function renderCommentNode(c) {
+        const isLiked = false; // Implementar verificação de like de comentário com subcoleção se necessário
+        const div = document.createElement("div");
+        div.className = "comment";
+        div.id = `comment-${c.id}`;
+        div.innerHTML = `
         <div class="comment-avatar">👤</div>
         <div class="comment-content">
           <h5>${c.name} <small style="font-weight:normal; color:#888;">${c.date}</small></h5>
@@ -654,7 +836,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           
           <div id="reply-form-${c.id}" class="reply-form-container">
-            <form class="comment-form" onsubmit="submitReply(event, ${newsId}, ${c.id})">
+            <form class="comment-form" onsubmit="submitReply(event, ${newsId}, '${c.id}')">
               <input type="text" placeholder="Seu nome" required>
               <textarea placeholder="Sua resposta" required></textarea>
               <button type="submit" class="download-btn" style="width: fit-content; font-size: 0.8rem; padding: 8px 15px;">Enviar</button>
@@ -665,18 +847,19 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
 
-      if (c.replies.length > 0) {
-        c.replies.sort((a, b) => a.id - b.id); // Replies usually chronological
-        const replyContainer = div.querySelector(`#replies-${c.id}`);
-        c.replies.forEach(reply => {
-          replyContainer.appendChild(renderCommentNode(reply));
-        });
+        if (c.replies.length > 0) {
+          c.replies.sort((a, b) => a.id - b.id); // Replies usually chronological
+          const replyContainer = div.querySelector(`#replies-${c.id}`);
+          c.replies.forEach(reply => {
+            replyContainer.appendChild(renderCommentNode(reply));
+          });
+        }
+        return div;
       }
-      return div;
-    }
 
-    roots.forEach(c => {
-      container.appendChild(renderCommentNode(c));
+      roots.forEach(c => {
+        container.appendChild(renderCommentNode(c));
+      });
     });
   }
 
@@ -700,32 +883,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = form.querySelector("input").value;
     const text = form.querySelector("textarea").value;
 
-    saveComment(newsId, name, text, null, parentId);
+    saveComment(newsId, name, text, null, parentId, () => form.reset());
   };
 
   window.toggleCommentLike = function (newsId, commentId) {
-    const key = `softsafe_comments_${newsId}`;
-    const comments = JSON.parse(localStorage.getItem(key) || "[]");
-    const commentIndex = comments.findIndex(c => c.id === commentId);
-
-    if (commentIndex === -1) return;
-
-    const userLikedKey = "softsafe_user_liked_comments";
-    const userLiked = JSON.parse(localStorage.getItem(userLikedKey) || "[]");
-    const hasLiked = userLiked.includes(commentId);
-
-    if (hasLiked) {
-      comments[commentIndex].likes = (comments[commentIndex].likes || 1) - 1;
-      const idx = userLiked.indexOf(commentId);
-      if (idx > -1) userLiked.splice(idx, 1);
-    } else {
-      comments[commentIndex].likes = (comments[commentIndex].likes || 0) + 1;
-      userLiked.push(commentId);
-    }
-
-    localStorage.setItem(key, JSON.stringify(comments));
-    localStorage.setItem(userLikedKey, JSON.stringify(userLiked));
-    loadComments(newsId);
+    // Simplificação: Apenas incrementa no Firestore. Para toggle real, precisa de subcoleção de likes por usuário.
+    const commentRef = doc(db, "news_stats", String(newsId), "comments", String(commentId));
+    updateDoc(commentRef, { likes: increment(1) });
   };
 
   // Search functionality
@@ -805,7 +969,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (backToTopBtn) {
     window.addEventListener("scroll", () => {
       if (window.scrollY > 300) {
-        backToTopBtn.style.display = "block";
+        backToTopBtn.style.display = "flex";
       } else {
         backToTopBtn.style.display = "none";
       }
@@ -970,6 +1134,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function openZoom(src) {
+    if (!zoomModal) return;
     zoomModal.style.display = "block";
     zoomImg.src = src;
     currentScale = 1;
@@ -977,6 +1142,18 @@ document.addEventListener("DOMContentLoaded", () => {
     translateY = 0;
     zoomImg.style.transform = ""; // Limpa transformações inline para permitir animação CSS
     zoomImg.style.cursor = "grab";
+
+    // Spinner Logic
+    if (zoomSpinner) zoomSpinner.style.display = "block";
+    zoomImg.style.display = "none";
+
+    zoomImg.onload = () => {
+      if (zoomSpinner) zoomSpinner.style.display = "none";
+      zoomImg.style.display = "block";
+    };
+    zoomImg.onerror = () => {
+      if (zoomSpinner) zoomSpinner.style.display = "none";
+    };
   }
 
   // Expose openZoom to window for inline onclick handlers
@@ -1006,78 +1183,80 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Mouse Wheel Zoom
-  zoomImg.addEventListener("wheel", (e) => {
-    e.preventDefault();
-    const delta = Math.sign(e.deltaY) * -0.2;
-    const newScale = Math.min(Math.max(1, currentScale + delta), 4);
-    currentScale = newScale;
-    updateZoomTransform();
-  }, { passive: false });
-
-  // Mouse Events for Pan (Desktop)
-  zoomImg.addEventListener("mousedown", (e) => {
-    if (currentScale > 1) {
-      isDragging = true;
-      startX = e.clientX - translateX;
-      startY = e.clientY - translateY;
-      zoomImg.style.cursor = "grabbing";
+  if (zoomImg) {
+    zoomImg.addEventListener("wheel", (e) => {
       e.preventDefault();
-    }
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if (isDragging && currentScale > 1) {
-      e.preventDefault();
-      translateX = e.clientX - startX;
-      translateY = e.clientY - startY;
+      const delta = Math.sign(e.deltaY) * -0.2;
+      const newScale = Math.min(Math.max(1, currentScale + delta), 4);
+      currentScale = newScale;
       updateZoomTransform();
-    }
-  });
+    }, { passive: false });
 
-  window.addEventListener("mouseup", () => {
-    if (isDragging) {
-      isDragging = false;
-      zoomImg.style.cursor = "grab";
-    }
-  });
+    // Mouse Events for Pan (Desktop)
+    zoomImg.addEventListener("mousedown", (e) => {
+      if (currentScale > 1) {
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+        zoomImg.style.cursor = "grabbing";
+        e.preventDefault();
+      }
+    });
 
-  // Touch Events for Pinch & Pan (Mobile)
-  zoomImg.addEventListener("touchstart", (e) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      initialDistance = Math.hypot(
-        e.touches[0].pageX - e.touches[1].pageX,
-        e.touches[0].pageY - e.touches[1].pageY
-      );
-      initialScale = currentScale;
-    } else if (e.touches.length === 1 && currentScale > 1) {
-      isDragging = true;
-      startX = e.touches[0].clientX - translateX;
-      startY = e.touches[0].clientY - translateY;
-    }
-  });
+    window.addEventListener("mousemove", (e) => {
+      if (isDragging && currentScale > 1) {
+        e.preventDefault();
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateZoomTransform();
+      }
+    });
 
-  zoomImg.addEventListener("touchmove", (e) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const currentDistance = Math.hypot(
-        e.touches[0].pageX - e.touches[1].pageX,
-        e.touches[0].pageY - e.touches[1].pageY
-      );
-      const scaleChange = currentDistance / initialDistance;
-      currentScale = Math.min(Math.max(1, initialScale * scaleChange), 4); // Min 1x, Max 4x
-      updateZoomTransform();
-    } else if (e.touches.length === 1 && isDragging && currentScale > 1) {
-      e.preventDefault();
-      translateX = e.touches[0].clientX - startX;
-      translateY = e.touches[0].clientY - startY;
-      updateZoomTransform();
-    }
-  });
+    window.addEventListener("mouseup", () => {
+      if (isDragging) {
+        isDragging = false;
+        zoomImg.style.cursor = "grab";
+      }
+    });
 
-  zoomImg.addEventListener("touchend", (e) => {
-    if (e.touches.length === 0) isDragging = false;
-  });
+    // Touch Events for Pinch & Pan (Mobile)
+    zoomImg.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        initialDistance = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+        );
+        initialScale = currentScale;
+      } else if (e.touches.length === 1 && currentScale > 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - translateX;
+        startY = e.touches[0].clientY - translateY;
+      }
+    });
+
+    zoomImg.addEventListener("touchmove", (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const currentDistance = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+        );
+        const scaleChange = currentDistance / initialDistance;
+        currentScale = Math.min(Math.max(1, initialScale * scaleChange), 4); // Min 1x, Max 4x
+        updateZoomTransform();
+      } else if (e.touches.length === 1 && isDragging && currentScale > 1) {
+        e.preventDefault();
+        translateX = e.touches[0].clientX - startX;
+        translateY = e.touches[0].clientY - startY;
+        updateZoomTransform();
+      }
+    });
+
+    zoomImg.addEventListener("touchend", (e) => {
+      if (e.touches.length === 0) isDragging = false;
+    });
+  }
 
   window.addEventListener("click", (e) => {
     if (e.target === zoomModal) {
@@ -1108,6 +1287,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("modal-version").textContent = product.version;
     document.getElementById("modal-compatibility").textContent = product.compatibility;
     document.getElementById("modal-description").innerHTML = product.description.replace(/\n/g, '<br>');
+
+    // Incrementar contador de cliques (views) do produto no Firestore
+    updateDoc(doc(db, "products", String(product.id)), { clicks: increment(1) }).catch(() => {
+      setDoc(doc(db, "products", String(product.id)), { clicks: 1 }, { merge: true });
+    });
 
     // Setup Carousel
     currentCarouselIndex = 0;
@@ -1180,10 +1364,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Close modal
-  closeBtn.addEventListener("click", () => {
-    closeModalWithFade(modal, () => {
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      closeModalWithFade(modal, () => {
+      });
     });
-  });
+  }
 
   window.addEventListener("click", (event) => {
     if (event.target == modal) {
@@ -1208,12 +1394,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Theme Toggle Logic
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener("click", () => {
-      document.body.classList.toggle("dark-mode");
-      themeToggleBtn.textContent = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
-    });
-  }
+  // (Moved to top for Firebase integration)
 
   // Close modals on ESC key
   document.addEventListener("keydown", (e) => {
@@ -1223,6 +1404,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (shareModal && shareModal.style.display === "block") closeModalWithFade(shareModal);
       if (newsModal && newsModal.style.display === "block") closeModalWithFade(newsModal);
       if (welcomeModal && welcomeModal.style.display === "block") closeWelcome();
+      if (contactModal && contactModal.style.display === "block") closeModalWithFade(contactModal);
 
       // Close burger menu
       if (navMenu && navMenu.classList.contains("active")) {

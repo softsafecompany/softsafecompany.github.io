@@ -1050,8 +1050,10 @@ body.dark-mode .close-share:hover {
   bottom: 90px;
   /* Acima do botão WhatsApp */
   right: 20px;
-  padding: 10px 15px;
-  background-color: #1f4cff;
+  height: 50px;
+  background-color: rgba(31, 76, 255, 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   color: white;
   border: none;
   border-radius: 50%;
@@ -1059,10 +1061,13 @@ body.dark-mode .close-share:hover {
   font-size: 1.2rem;
   z-index: 999;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .back-to-top:hover {
-  background-color: #3a66ff;
+  background-color: rgba(31, 76, 255, 0.9);
   transform: translateY(-3px);
 }
 
@@ -1402,4 +1407,95 @@ body.dark-mode .comment-form input[type="file"] {
 /* File Input Customization */
 .comment-form input[type="file"]::file-selector-button {
   display: none;
+}
+
+/* News Search */
+.news-search-container {
+  max-width: 600px;
+  margin: 0 auto 40px auto;
+  display: flex;
+  gap: 10px;
+  padding: 0 20px;
+}
+
+.news-search-input {
+  flex: 1;
+  padding: 12px 20px;
+  border: 2px solid #ddd;
+  border-radius: 25px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.news-search-input:focus {
+  border-color: #1f4cff;
+}
+
+body.dark-mode .news-search-input {
+  background-color: #252525;
+  border-color: #444;
+  color: #fff;
+}
+
+/* Product Views Counter */
+.product-views {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 5px;
+}
+
+body.dark-mode .product-views {
+  color: #aaa;
+}
+
+/* Contact Modal Styles */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  color: #333;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.contact-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+body.dark-mode .contact-form input,
+body.dark-mode .contact-form textarea {
+  background-color: #252525;
+  border-color: #444;
+  color: #e1e2e3;
+}
+
+/* Zoom Spinner */
+.zoom-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2002;
 }
