@@ -8,8 +8,8 @@
 }
 
 body {
-  background-color: #0a1020;
-  color: #e1e2e3;
+  background-color: #e1e2e3;
+  color: #000;
 }
 
 .header {
@@ -93,7 +93,8 @@ body {
 
 
 .produto {
-  background: #0f1730;
+  background: #f4f4f4;
+  color: #000;
   padding: 20px;
   margin-top: 20px;
   border-radius: 18px;
@@ -149,7 +150,8 @@ body {
 }
 
 .modal-content {
-  background-color: #0a1020;
+  background-color: #e1e2e3;
+  color: #000;
   margin: 10% auto;
   padding: 30px;
   border: 1px solid #888;
@@ -242,6 +244,7 @@ body {
   max-height: 100%;
   object-fit: contain;
   display: none;
+  cursor: zoom-in;
 }
 
 .carousel-item video {
@@ -318,6 +321,18 @@ body {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Carousel Error */
+.carousel-error-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #e74c3c;
+  width: 100%;
+  height: 100%;
+  text-align: center;
 }
 
 /* Zoom Modal */

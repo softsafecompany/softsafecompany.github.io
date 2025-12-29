@@ -113,14 +113,38 @@ document.addEventListener("DOMContentLoaded", () => {
     performSearch();
   });
 
-  // Fetch product data
+  // Fetch product data with Cache
   showSkeleton();
-  fetch("content.json")
-    .then(response => response.json())
-    .then(data => {
+  const CACHE_KEY = "softsafe_products_cache";
+  const CACHE_DURATION = 3600000; // 1 hour
+
+  const cachedData = localStorage.getItem(CACHE_KEY);
+  const now = new Date().getTime();
+
+  if (cachedData) {
+    const { timestamp, data } = JSON.parse(cachedData);
+    if (now - timestamp < CACHE_DURATION) {
       allProducts = data;
       renderProducts(allProducts);
-    });
+    } else {
+      fetchData();
+    }
+  } else {
+    fetchData();
+  }
+
+  function fetchData() {
+    fetch("content.json")
+      .then(response => response.json())
+      .then(data => {
+        allProducts = data;
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          timestamp: new Date().getTime(),
+          data: data
+        }));
+        renderProducts(allProducts);
+      });
+  }
 
   // Search functionality
   function performSearch() {
@@ -168,14 +192,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const img = document.createElement("img");
         img.src = media.src;
         img.alt = "Product Image";
-        img.style.cursor = "zoom-in";
-        img.style.display = "none";
+        img.loading = "lazy";
 
         img.onload = () => {
           spinner.remove();
           img.style.display = "block";
         };
-        img.onerror = () => spinner.remove();
+        img.onerror = () => {
+          spinner.remove();
+          const errorMsg = document.createElement("div");
+          errorMsg.className = "carousel-error-msg";
+          errorMsg.innerHTML = "<span>⚠️</span><p>Imagem indisponível</p>";
+          item.appendChild(errorMsg);
+        };
 
         img.onclick = () => openZoom(media.src);
         item.appendChild(img);
@@ -258,21 +287,56 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Zoom Functionality
+  // Zoom Functionality with Pinch Support
+  let initialDistance = 0;
+  let initialScale = 1;
+  let currentScale = 1;
+
   function openZoom(src) {
     zoomModal.style.display = "block";
     zoomImg.src = src;
+    currentScale = 1;
+    zoomImg.style.transform = `scale(1)`;
   }
 
   if (closeZoom) {
     closeZoom.onclick = () => {
       zoomModal.style.display = "none";
+      currentScale = 1;
+      zoomImg.style.transform = `scale(1)`;
     };
   }
+
+  // Pinch to Zoom Logic
+  zoomImg.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      initialDistance = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
+      initialScale = currentScale;
+    }
+  });
+
+  zoomImg.addEventListener("touchmove", (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const currentDistance = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
+      const scaleChange = currentDistance / initialDistance;
+      currentScale = Math.min(Math.max(1, initialScale * scaleChange), 4); // Min 1x, Max 4x
+      zoomImg.style.transform = `scale(${currentScale})`;
+    }
+  });
 
   window.addEventListener("click", (e) => {
     if (e.target === zoomModal) {
       zoomModal.style.display = "none";
+      currentScale = 1;
+      zoomImg.style.transform = `scale(1)`;
     }
   });
 
