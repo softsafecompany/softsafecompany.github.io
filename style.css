@@ -2192,3 +2192,33 @@ body.dark-mode .custom-dialog-input {
 #accept-welcome {
   margin-top: 15px;
 }
+
+/* Desktop Header Alignment */
+@media (min-width: 829px) {
+  .header {
+    justify-content: flex-start;
+  }
+
+  .logo {
+    order: 1;
+    margin-right: auto;
+  }
+
+  #nav-menu {
+    order: 2;
+    display: flex !important;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .header-controls {
+    order: 3;
+    margin-left: 20px;
+    position: static;
+    transform: none;
+  }
+
+  .burger-menu {
+    display: none;
+  }
+}

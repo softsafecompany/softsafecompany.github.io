@@ -527,14 +527,22 @@ document.addEventListener("DOMContentLoaded", () => {
       const isNew = !isNaN(diffDays) && diffDays >= 0 && diffDays <= 30;
 
       const name = getLocalized(product, 'name');
+      const price = product.price || "00";
+      const isPaid = price !== "00";
+      const priceHtml = `<p style="font-weight:bold; margin-top:5px; color:${isPaid ? '#e74c3c' : '#2ecc71'}">${isPaid ? 'Preço: ' + price + ' MZN' : 'Grátis'}</p>`;
+
       const productCard = `
           <div class="produto fade-in" style="animation-delay: ${index * 0.1}s">
             ${isNew ? '<span class="new-badge">Novo</span>' : ''}
             <img src="${product.image}" alt="${product.name}">
             <h4>${name}</h4>
+            <div class="product-rating-list" id="product-rating-${product.id}" style="margin: 5px 0; color: #f1c40f; font-size: 1.2rem;">
+               <span class="stars-display">☆☆☆☆☆</span> <span class="rating-value" style="font-size: 0.9rem; color: #666;">(0.0)</span>
+            </div>
             <div class="product-views" id="product-views-${product.id}">
                👁️ <span class="view-count">0</span> visualizações
             </div>
+            ${priceHtml}
             <button class="view-more-btn" data-id="${product.id}">Ver Mais</button>
           </div>
         `;
@@ -544,10 +552,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     productsToRender.forEach((product) => {
       // Ouvir atualizações de visualizações em tempo real
-      onSnapshot(doc(db, "products", String(product.id)), (doc) => {
-        if (doc.exists()) {
+      onSnapshot(doc(db, "products", String(product.id)), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
           const countElem = document.querySelector(`#product-views-${product.id} .view-count`);
-          if (countElem) countElem.textContent = doc.data().clicks || 0;
+          if (countElem) countElem.textContent = data.clicks || 0;
+
+          const ratingElem = document.querySelector(`#product-rating-${product.id} .stars-display`);
+          const valElem = document.querySelector(`#product-rating-${product.id} .rating-value`);
+          if (ratingElem && valElem) {
+            const avg = data.averageRating || 0;
+            const stars = "★★★★★☆☆☆☆☆".slice(5 - Math.round(avg), 10 - Math.round(avg));
+            ratingElem.textContent = stars;
+            valElem.textContent = `(${avg.toFixed(1)})`;
+          }
         }
       }, (error) => {
         console.warn(`Permissão negada (Views): ${error.code}`);
@@ -1832,15 +1850,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Reset button state
     downloadBtn.classList.remove("downloading");
-    downloadBtn.textContent = "Download";
+    const price = product.price || "00";
+    const isPaid = price !== "00";
+    downloadBtn.textContent = isPaid ? "Comprar" : "Download";
     downloadBtn.disabled = false;
 
     downloadBtn.onclick = () => {
       triggerConfetti();
-      downloadBtn.classList.add("downloading");
-      downloadBtn.textContent = "Baixando...";
-      downloadBtn.disabled = true;
-      window.location.href = product.download_link;
+      // downloadBtn.classList.add("downloading");
+      // downloadBtn.textContent = "Baixando...";
+      // downloadBtn.disabled = true;
+      window.open(product.download_link, '_blank');
     };
 
     modal.style.display = "block";
