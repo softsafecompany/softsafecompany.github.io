@@ -481,17 +481,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Product Logic (Only if productList exists)
   function showSkeleton() {
     if (!productList) return;
-    productList.innerHTML = "";
-    for (let i = 0; i < 3; i++) {
-      const skeletonHTML = `
-          <div class="produto skeleton skeleton-anim">
-            <div style="width: 100%; height: 150px; background-color: #ccc; margin-bottom: 10px; border-radius: 4px;"></div>
-            <div style="width: 80%; height: 20px; background-color: #ccc; margin-bottom: 10px; border-radius: 4px;"></div>
-            <div style="width: 100px; height: 35px; background-color: #ccc; border-radius: 4px;"></div>
-          </div>
-        `;
-      productList.innerHTML += skeletonHTML;
-    }
+    productList.innerHTML = '<div class="main-spinner"></div>';
   }
 
   let paginationContainer;
@@ -627,26 +617,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Fetch product data with Cache
   showSkeleton();
-  const CACHE_KEY = "softsafe_products_cache";
-  const CACHE_DURATION = 3600000; // 1 hour
 
-  const cachedData = localStorage.getItem(CACHE_KEY);
-  const now = new Date().getTime();
-
-  if (cachedData) {
-    const { timestamp, data } = JSON.parse(cachedData);
-    if (now - timestamp < CACHE_DURATION) {
-      allProducts = data;
-      renderProducts(allProducts);
-    } else {
-      fetchData();
-    }
-  } else {
-    fetchData();
-  }
+  // Cache removido para garantir que alterações no JSON (links, preços) apareçam imediatamente
+  localStorage.removeItem("softsafe_products_cache"); // Limpa cache antigo se existir
+  fetchData();
 
   function fetchData() {
-    fetch("content.json")
+    // Adicionado timestamp (?t=...) para evitar cache do navegador
+    fetch(`content.json?t=${new Date().getTime()}`)
       .then(response => response.json())
       .then(data => {
         // Ordenar por data (mais recente primeiro)
@@ -657,10 +635,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         allProducts = data;
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          timestamp: new Date().getTime(),
-          data: data
-        }));
         renderProducts(allProducts);
       });
   }
@@ -685,7 +659,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderNewsBatch();
     });
 
-    fetch("news.json")
+    fetch(`news.json?t=${new Date().getTime()}`)
       .then(res => res.json())
       .then(data => {
         allNews = data;
@@ -1860,7 +1834,13 @@ document.addEventListener("DOMContentLoaded", () => {
       // downloadBtn.classList.add("downloading");
       // downloadBtn.textContent = "Baixando...";
       // downloadBtn.disabled = true;
-      window.open(product.download_link, '_blank');
+
+      const width = 800;
+      const height = 600;
+      const left = (window.screen.width - width) / 2;
+      const top = (window.screen.height - height) / 2;
+
+      window.open(product.download_link, 'DownloadPopup', `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`);
     };
 
     modal.style.display = "block";
@@ -2042,7 +2022,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Fetch Data & Setup Animation
-    fetch("faq.json")
+    fetch(`faq.json?t=${new Date().getTime()}`)
       .then(res => res.json())
       .then(data => {
         faqContainer.innerHTML = "";
