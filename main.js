@@ -1702,6 +1702,62 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Close privacy modal on outside click (handled by generic window click listener below)
+
+  // FAQ Logic (Fetch JSON + Animation + Accordion)
+  const faqContainer = document.querySelector(".faq-container");
+  if (faqContainer) {
+    // Event Delegation for Accordion
+    faqContainer.addEventListener("click", (e) => {
+      const button = e.target.closest(".faq-question");
+      if (!button) return;
+
+      const item = button.parentElement;
+      const isActive = item.classList.contains("active");
+
+      // Close all others (optional - remove if you want multiple open)
+      document.querySelectorAll(".faq-item").forEach(i => {
+        i.classList.remove("active");
+        i.querySelector(".faq-answer").style.maxHeight = null;
+      });
+
+      if (!isActive) {
+        item.classList.add("active");
+        const answer = item.querySelector(".faq-answer");
+        answer.style.maxHeight = answer.scrollHeight + "px";
+      }
+    });
+
+    // Fetch Data & Setup Animation
+    fetch("faq.json")
+      .then(res => res.json())
+      .then(data => {
+        faqContainer.innerHTML = "";
+        data.forEach((item, index) => {
+          const div = document.createElement("div");
+          div.className = "faq-item scroll-hidden";
+          div.style.transitionDelay = `${index * 0.15}s`; // Stagger effect
+          div.innerHTML = `
+            <button class="faq-question">${item.question} <span class="faq-icon">+</span></button>
+            <div class="faq-answer"><p>${item.answer}</p></div>
+          `;
+          faqContainer.appendChild(div);
+        });
+
+        // Intersection Observer for Fade-In
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              entry.target.classList.remove("scroll-hidden");
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll(".faq-item").forEach(el => observer.observe(el));
+      })
+      .catch(err => console.error("Erro ao carregar FAQ:", err));
+  }
 });
 
 function scrollToProducts() {

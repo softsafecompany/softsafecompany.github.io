@@ -1,0 +1,14 @@
+[
+    {
+        "question": "O software funciona offline?",
+        "answer": "Sim! Todos os nossos softwares são projetados para funcionar 100% offline, garantindo sua privacidade e segurança sem depender de conexão com a internet."
+    },
+    {
+        "question": "É compatível com Windows 11?",
+        "answer": "Perfeitamente. Nossas ferramentas são otimizadas para Windows 10 e 11, aproveitando os recursos mais recentes do sistema."
+    },
+    {
+        "question": "Como faço para atualizar?",
+        "answer": "O próprio software possui um verificador de atualizações integrado na tela inicial. Basta clicar em \"Verificar atualizações\"."
+    }
+]

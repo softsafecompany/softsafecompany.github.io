@@ -120,7 +120,9 @@ body {
     right: -100%;
     width: 250px;
     height: 100vh;
-    background-color: #611e1e;
+    background-color: rgba(97, 30, 30, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     flex-direction: column;
     align-items: center;
     padding-top: 80px;
@@ -368,6 +370,36 @@ body.menu-open .back-to-top {
 .footer-socials a:hover {
   opacity: 1;
   color: #1f4cff;
+}
+
+/* Social Tooltip */
+.footer-socials a {
+  position: relative;
+}
+
+.footer-socials a::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.footer-socials a:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-5px);
 }
 
 .footer-legal a {
@@ -1521,6 +1553,87 @@ body.dark-mode .news-search-input {
   background-color: #252525;
   border-color: #444;
   color: #fff;
+}
+
+/* FAQ Section */
+.faq-section {
+  padding: 60px 40px;
+  background-color: #f4f4f4;
+  text-align: center;
+}
+
+body.dark-mode .faq-section {
+  background-color: #1a1a1a;
+}
+
+.faq-container {
+  max-width: 800px;
+  margin: 30px auto 0;
+  text-align: left;
+}
+
+.faq-item {
+  background: #fff;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out, background-color 0.3s, border-color 0.3s;
+}
+
+.faq-item.scroll-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.faq-item.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+body.dark-mode .faq-item {
+  background: #1e1e1e;
+  border: 1px solid #333;
+}
+
+.faq-question {
+  width: 100%;
+  padding: 20px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: inherit;
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+  padding: 0 20px;
+}
+
+.faq-answer p {
+  padding-bottom: 20px;
+  color: #666;
+}
+
+body.dark-mode .faq-answer p {
+  color: #ccc;
+}
+
+.faq-icon {
+  transition: transform 0.3s;
+  font-size: 1.5rem;
+}
+
+.faq-item.active .faq-icon {
+  transform: rotate(45deg);
 }
 
 .news-search-btn {
