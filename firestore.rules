@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Regras para Produtos
+    match /products/{productId} {
+      allow read: if true;
+      // Permitir atualizar contadores (clicks, rating)
+      allow update: if true; 
+      
+      match /ratings/{userId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // Regras para Notícias e Estatísticas
+    match /news_stats/{newsId} {
+      allow read: if true;
+      allow update: if true; // Para incrementar views/likes
+      
+      match /likes/{userId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null && request.resource.data.name == resource.data.name;
+      }
+    }
+    
+    // Regras para Mensagens de Contato e Usuários
+    match /messages/{messageId} { allow create: if true; }
+    match /users/{userId} { allow read, write: if request.auth != null && request.auth.uid == userId; }
+  }
+}

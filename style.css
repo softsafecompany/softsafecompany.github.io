@@ -635,6 +635,34 @@ body.menu-open .back-to-top {
   font-size: 16px;
 }
 
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px auto;
+}
+
+.pagination-container button {
+  padding: 8px 15px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.3s;
+}
+
+.pagination-container button.active,
+.pagination-container button:hover:not(:disabled) {
+  background-color: #1f4cff;
+  color: white;
+  border-color: #1f4cff;
+}
+
+.pagination-container button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @keyframes skeleton-pulse {
   0% {
     opacity: 0.6;

@@ -268,7 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (i < text.length) {
         heroTitle.insertBefore(document.createTextNode(text.charAt(i)), cursor);
         i++;
-        setTimeout(typeWriter, 50); // Velocidade da digitação
+        setTimeout(typeWriter, 150); // Velocidade da digitação
       }
     }
     setTimeout(typeWriter, 500); // Atraso inicial
@@ -368,13 +368,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  let loadMoreBtn;
+  let paginationContainer;
   if (productList) {
-    // Create Load More Button
-    loadMoreBtn = document.createElement("button");
-    loadMoreBtn.textContent = "Carregar Mais";
-    loadMoreBtn.className = "load-more-btn";
-    productList.parentNode.insertBefore(loadMoreBtn, productList.nextSibling);
+    // Create Pagination Container
+    paginationContainer = document.createElement("div");
+    paginationContainer.className = "pagination-container";
+    productList.parentNode.insertBefore(paginationContainer, productList.nextSibling);
 
     // Event Delegation for View More
     productList.addEventListener("click", (e) => {
@@ -384,11 +383,6 @@ document.addEventListener("DOMContentLoaded", () => {
         openModal(product);
       }
     });
-
-    loadMoreBtn.addEventListener("click", () => {
-      currentPage++;
-      renderBatch();
-    });
   }
 
   function renderBatch() {
@@ -397,6 +391,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const end = currentPage * ITEMS_PER_PAGE;
     const productsToRender = currentFilteredProducts.slice(start, end);
 
+    productList.innerHTML = "";
     let productsHTML = "";
     productsToRender.forEach((product, index) => {
       const productCard = `
@@ -410,7 +405,10 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         `;
       productsHTML += productCard;
+    });
+    productList.innerHTML = productsHTML;
 
+    productsToRender.forEach((product) => {
       // Ouvir atualizações de visualizações em tempo real
       onSnapshot(doc(db, "products", String(product.id)), (doc) => {
         if (doc.exists()) {
@@ -421,14 +419,38 @@ document.addEventListener("DOMContentLoaded", () => {
         console.warn(`Permissão negada (Views): ${error.code}`);
       });
     });
-    productList.insertAdjacentHTML('beforeend', productsHTML);
 
-    if (currentFilteredProducts.length > end) {
-      loadMoreBtn.style.display = "block";
-    } else {
-      loadMoreBtn.style.display = "none";
-    }
+    renderPaginationControls();
     updateCounter();
+  }
+
+  function renderPaginationControls() {
+    if (!paginationContainer) return;
+    paginationContainer.innerHTML = "";
+    const totalPages = Math.ceil(currentFilteredProducts.length / ITEMS_PER_PAGE);
+
+    if (totalPages <= 1) return;
+
+    const createBtn = (text, page, active = false, disabled = false) => {
+      const btn = document.createElement("button");
+      btn.textContent = text;
+      if (active) btn.classList.add("active");
+      if (disabled) btn.disabled = true;
+      btn.onclick = () => {
+        if (page !== currentPage && !disabled) {
+          currentPage = page;
+          renderBatch();
+          document.getElementById("produtos").scrollIntoView({ behavior: "smooth" });
+        }
+      };
+      return btn;
+    };
+
+    paginationContainer.appendChild(createBtn("<", currentPage - 1, false, currentPage === 1));
+    for (let i = 1; i <= totalPages; i++) {
+      paginationContainer.appendChild(createBtn(i, i, i === currentPage));
+    }
+    paginationContainer.appendChild(createBtn(">", currentPage + 1, false, currentPage === totalPages));
   }
 
   function updateCounter() {
@@ -444,7 +466,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (products.length === 0) {
       productList.innerHTML = '<p class="no-results" style="width: 100%; text-align: center; padding: 20px;">Nenhum produto encontrado.</p>';
-      loadMoreBtn.style.display = "none";
+      if (paginationContainer) paginationContainer.innerHTML = "";
       productCountElem.textContent = "";
       return;
     }
