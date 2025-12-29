@@ -292,6 +292,7 @@ body.menu-open .back-to-top {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 }
 
 .produto img {
@@ -319,12 +320,65 @@ body.menu-open .back-to-top {
   background: #3f9fc5;
 }
 
+.new-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #e74c3c;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  z-index: 2;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
 .footer {
   text-align: center;
   padding: 20px;
   background: #050a18;
   color: #e1e2e3;
   font-size: 0.9rem;
+}
+
+.footer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-socials {
+  display: flex;
+  gap: 20px;
+  margin: 5px 0;
+}
+
+.footer-socials a {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+  opacity: 0.8;
+  transition: opacity 0.3s, color 0.3s;
+}
+
+.footer-socials a:hover {
+  opacity: 1;
+  color: #1f4cff;
+}
+
+.footer-legal a {
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+}
+
+.footer-legal a:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 .modal {
@@ -1599,4 +1653,113 @@ body.dark-mode .contact-form textarea {
 
 .toast-notification.success {
   background-color: #2ecc71;
+}
+
+/* Custom Dialog (Alert/Prompt) */
+.custom-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  z-index: 11000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.custom-dialog-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.custom-dialog-box {
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  transform: scale(0.8);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.custom-dialog-overlay.active .custom-dialog-box {
+  transform: scale(1);
+}
+
+body.dark-mode .custom-dialog-box {
+  background: #1e1e1e;
+  color: #fff;
+  border: 1px solid #333;
+}
+
+.custom-dialog-box h3 {
+  margin-bottom: 10px;
+  color: #1f4cff;
+}
+
+.custom-dialog-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.dialog-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.ok-btn {
+  background-color: #1f4cff;
+  color: white;
+}
+
+.ok-btn:hover {
+  background-color: #3a66ff;
+}
+
+.cancel-btn {
+  background-color: #ddd;
+  color: #333;
+}
+
+.cancel-btn:hover {
+  background-color: #ccc;
+}
+
+body.dark-mode .cancel-btn {
+  background-color: #333;
+  color: #ddd;
+}
+
+body.dark-mode .cancel-btn:hover {
+  background-color: #444;
+}
+
+.custom-dialog-input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  outline: none;
+}
+
+body.dark-mode .custom-dialog-input {
+  background: #252525;
+  border-color: #444;
+  color: #fff;
 }

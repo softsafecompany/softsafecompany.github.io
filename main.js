@@ -73,6 +73,73 @@ document.addEventListener("DOMContentLoaded", () => {
   const stars = document.querySelectorAll('.star');
   const ratingCountElem = document.getElementById('rating-count');
 
+  // --- Custom Alert & Prompt System ---
+  // Injeta o HTML do modal de alerta no corpo da página
+  const customDialogHTML = `
+    <div id="custom-dialog-overlay" class="custom-dialog-overlay">
+      <div class="custom-dialog-box">
+        <h3 id="custom-dialog-title">Aviso</h3>
+        <p id="custom-dialog-message"></p>
+        <div id="custom-dialog-input-container" style="display:none;">
+          <input type="text" id="custom-dialog-input" class="custom-dialog-input">
+        </div>
+        <div class="custom-dialog-actions">
+          <button id="custom-dialog-cancel" class="dialog-btn cancel-btn" style="display:none;">Cancelar</button>
+          <button id="custom-dialog-ok" class="dialog-btn ok-btn">OK</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', customDialogHTML);
+
+  const dialogOverlay = document.getElementById('custom-dialog-overlay');
+  const dialogTitle = document.getElementById('custom-dialog-title');
+  const dialogMessage = document.getElementById('custom-dialog-message');
+  const dialogInputContainer = document.getElementById('custom-dialog-input-container');
+  const dialogInput = document.getElementById('custom-dialog-input');
+  const dialogOk = document.getElementById('custom-dialog-ok');
+  const dialogCancel = document.getElementById('custom-dialog-cancel');
+
+  window.customAlert = function (message, title = "Aviso") {
+    return new Promise((resolve) => {
+      dialogTitle.textContent = title;
+      dialogMessage.textContent = message;
+      dialogInputContainer.style.display = 'none';
+      dialogCancel.style.display = 'none';
+      dialogOverlay.classList.add('active');
+
+      dialogOk.onclick = () => {
+        dialogOverlay.classList.remove('active');
+        resolve(true);
+      };
+    });
+  };
+
+  window.customPrompt = function (message, title = "Entrada") {
+    return new Promise((resolve) => {
+      dialogTitle.textContent = title;
+      dialogMessage.textContent = message;
+      dialogInputContainer.style.display = 'block';
+      dialogInput.value = '';
+      dialogCancel.style.display = 'inline-block';
+      dialogOverlay.classList.add('active');
+      dialogInput.focus();
+
+      const close = (val) => {
+        dialogOverlay.classList.remove('active');
+        resolve(val);
+      };
+
+      dialogOk.onclick = () => close(dialogInput.value);
+      dialogCancel.onclick = () => close(null);
+
+      // Permitir Enter para confirmar
+      dialogInput.onkeyup = (e) => {
+        if (e.key === 'Enter') close(dialogInput.value);
+      };
+    });
+  };
+
   // --- Toast Notification Logic ---
   function showToast(message, type = 'info') {
     let toast = document.getElementById("toast-notification");
@@ -141,19 +208,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        alert("Por favor, insira um endereço de email válido.");
+        customAlert("Por favor, insira um endereço de email válido.", "Erro");
         return;
       }
 
       addDoc(collection(db, "messages"), {
         name, email, message, date: new Date().toISOString()
       }).then(() => {
-        alert("Mensagem enviada com sucesso!");
+        customAlert("Mensagem enviada com sucesso!", "Sucesso");
         contactForm.reset();
         closeModalWithFade(contactModal);
       }).catch((err) => {
         console.error(err);
-        alert("Erro ao enviar mensagem.");
+        customAlert("Erro ao enviar mensagem.", "Erro");
       });
     });
   }
@@ -394,8 +461,15 @@ document.addEventListener("DOMContentLoaded", () => {
     productList.innerHTML = "";
     let productsHTML = "";
     productsToRender.forEach((product, index) => {
+      const productDate = new Date(product.date);
+      const now = new Date();
+      const diffTime = now - productDate;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const isNew = !isNaN(diffDays) && diffDays >= 0 && diffDays <= 30;
+
       const productCard = `
           <div class="produto fade-in" style="animation-delay: ${index * 0.1}s">
+            ${isNew ? '<span class="new-badge">Novo</span>' : ''}
             <img src="${product.image}" alt="${product.name}">
             <h4>${product.name}</h4>
             <div class="product-views" id="product-views-${product.id}">
@@ -497,6 +571,13 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch("content.json")
       .then(response => response.json())
       .then(data => {
+        // Ordenar por data (mais recente primeiro)
+        data.sort((a, b) => {
+          const dateA = new Date(a.date || 0);
+          const dateB = new Date(b.date || 0);
+          return dateB - dateA;
+        });
+
         allProducts = data;
         localStorage.setItem(CACHE_KEY, JSON.stringify({
           timestamp: new Date().getTime(),
@@ -793,7 +874,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Expose Like functions to window
   window.toggleNewsLike = function (id) {
-    if (!currentUser) return alert("Aguarde a inicialização...");
+    if (!currentUser) return customAlert("Aguarde a inicialização...", "Sistema");
 
     const likeRef = doc(db, "news_stats", String(id), "likes", currentUser.uid);
     const statsRef = doc(db, "news_stats", String(id));
@@ -1476,7 +1557,7 @@ document.addEventListener("DOMContentLoaded", () => {
       star.addEventListener('click', () => {
         const rating = parseInt(star.dataset.value);
         if (!currentUser) {
-          alert("Aguarde a autenticação para avaliar.");
+          customAlert("Aguarde a autenticação para avaliar.", "Aviso");
           return;
         }
         if (!currentOpenProductId) return;
@@ -1522,8 +1603,8 @@ document.addEventListener("DOMContentLoaded", () => {
           transaction.set(userRatingRef, { rating: rating, timestamp: new Date() });
         }).then(() => {
           console.log("Avaliação salva!");
-          alert("Obrigado pela sua avaliação!");
-        }).catch(err => alert(err));
+          customAlert("Obrigado pela sua avaliação!", "Sucesso");
+        }).catch(err => customAlert(String(err), "Erro"));
       });
     });
   }
@@ -1580,11 +1661,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Dynamic Copyright Year
-  const footerP = document.querySelector(".footer p");
-  if (footerP) {
+  // Dynamic Footer Content (Copyright + Socials + Privacy)
+  const footer = document.querySelector(".footer");
+  if (footer) {
     const currentYear = new Date().getFullYear();
-    footerP.innerHTML = `&copy; ${currentYear} SoftSafe — Todos os direitos reservados`;
+    footer.innerHTML = `
+      <div class="footer-container">
+        <p>&copy; ${currentYear} SoftSafe — Todos os direitos reservados</p>
+        <div class="footer-socials">
+          <a href="https://facebook.com" target="_blank">Facebook</a>
+          <a href="https://instagram.com" target="_blank">Instagram</a>
+          <a href="https://twitter.com" target="_blank">X</a>
+        </div>
+        <div class="footer-legal">
+          <a href="#" onclick="event.preventDefault(); customAlert('Política de Privacidade em construção', 'Info')">Política de Privacidade</a>
+        </div>
+      </div>
+    `;
   }
 });
 

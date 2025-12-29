@@ -6,7 +6,7 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if true;
       // Permitir atualizar contadores (clicks, rating)
-      allow update: if true; 
+      allow write: if true; 
       
       match /ratings/{userId} {
         allow read: if true;
@@ -17,7 +17,7 @@ service cloud.firestore {
     // Regras para Notícias e Estatísticas
     match /news_stats/{newsId} {
       allow read: if true;
-      allow update: if true; // Para incrementar views/likes
+      allow write: if true; // Alterado de update para write para permitir criar o documento se não existir
       
       match /likes/{userId} {
         allow read: if true;

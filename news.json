@@ -1,6 +1,16 @@
 [
     {
         "id": 1,
+        "date": "25/12/2025",
+        "title": "Criação do SoftSafe Company",
+        "image": "assets/softsafe.png",
+        "text": "Estamos orgulhosos em anunciar a fundação da SoftSafe Company, dedicada a desenvolver soluções de software inovadoras, que priorizam a segurança e a privacidade dos usuários. Nossa missão é fornecer ferramentas poderosas que funcionam 100% offline, garantindo que seus dados permaneçam sempre sob seu controle. \n Junte-se a nós nesta jornada para tornar o mundo digital um lugar mais seguro.",
+        "extra_image": "assets/product.png",
+        "extra_text": "Confira as notas de atualização completas no nosso portal.",
+        "link": "#"
+    },
+    {
+        "id": 2,
         "date": "15/05/2025",
         "title": "Lançamento SoftSafe 2.0",
         "image": "assets/product.png",
@@ -10,7 +20,7 @@
         "link": "#"
     },
     {
-        "id": 2,
+        "id": 3,
         "date": "10/05/2025",
         "title": "Dicas de Segurança",
         "image": "assets/product.png",

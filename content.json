@@ -2,6 +2,7 @@
   {
     "id": 1,
     "name": "Removedor de fundo suave",
+    "date": "2025-05-20",
     "image": "assets/product.png",
     "title": "Removedor de fundo suave",
     "size": "150 MB",
@@ -27,6 +28,7 @@
   {
     "id": 2,
     "name": "cc",
+    "date": "2025-05-18",
     "image": "assets/product.png",
     "title": "Removedor de fundo suave",
     "size": "150 MB",
@@ -38,6 +40,7 @@
   {
     "id": 3,
     "name": "Removedor ",
+    "date": "2025-04-10",
     "image": "assets/product.png",
     "title": "Removedor de fundo suave",
     "size": "150 MB",
@@ -49,6 +52,7 @@
   {
     "id": 4,
     "name": " fundo suave",
+    "date": "2025-01-15",
     "image": "assets/product.png",
     "title": "Removedor de fundo suave",
     "size": "150 MB",
