@@ -15,6 +15,51 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomImg = document.getElementById("zoom-img");
   const closeZoom = document.querySelector(".close-zoom");
   const themeToggleBtn = document.getElementById("theme-toggle");
+  const suggestionsContainer = document.getElementById("suggestions-container");
+  const resetZoomBtn = document.getElementById("reset-zoom");
+  const progressBar = document.getElementById("progress-bar");
+  const sobreSection = document.getElementById("sobre");
+
+  // Parallax Effect for Hero
+  const heroSection = document.querySelector(".hero");
+  if (heroSection) {
+    window.addEventListener("scroll", () => {
+      const scrolled = window.scrollY;
+      window.requestAnimationFrame(() => {
+        heroSection.style.backgroundPositionY = `${scrolled * 0.5}px`;
+      });
+    });
+  }
+
+  // Typewriter Effect for Hero Title
+  const heroTitle = document.querySelector(".hero h2");
+  if (heroTitle) {
+    const text = heroTitle.textContent;
+    heroTitle.textContent = "";
+
+    const cursor = document.createElement("span");
+    cursor.className = "typewriter-cursor";
+    heroTitle.appendChild(cursor);
+
+    let i = 0;
+    function typeWriter() {
+      if (i < text.length) {
+        heroTitle.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+        i++;
+        setTimeout(typeWriter, 50); // Velocidade da digitação
+      }
+    }
+    setTimeout(typeWriter, 500); // Atraso inicial
+  }
+
+  // Share Elements
+  const shareModal = document.getElementById("share-modal");
+  const closeShareBtn = document.querySelector(".close-share");
+  const shareWhatsapp = document.getElementById("share-whatsapp");
+  const shareFacebook = document.getElementById("share-facebook");
+  const shareInstagram = document.getElementById("share-instagram");
+  const shareX = document.getElementById("share-x");
+  const shareCopy = document.getElementById("share-copy");
 
   let allProducts = [];
   let currentFilteredProducts = [];
@@ -36,12 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
       productList.innerHTML += skeletonHTML;
     }
   }
-
-  // Create Clear Button
-  const clearBtn = document.createElement("button");
-  clearBtn.textContent = "Limpar";
-  clearBtn.className = "clear-btn";
-  if (searchContainer) searchContainer.appendChild(clearBtn);
 
   // Create Load More Button
   const loadMoreBtn = document.createElement("button");
@@ -108,11 +147,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderBatch();
   });
 
-  clearBtn.addEventListener("click", () => {
-    searchBar.value = "";
-    performSearch();
-  });
-
   // Fetch product data with Cache
   showSkeleton();
   const CACHE_KEY = "softsafe_products_cache";
@@ -149,13 +183,40 @@ document.addEventListener("DOMContentLoaded", () => {
   // Search functionality
   function performSearch() {
     const query = searchBar.value.toLowerCase();
-    clearBtn.style.display = query.length > 0 ? "inline-block" : "none";
     const filteredProducts = allProducts.filter(product =>
       product.name.toLowerCase().includes(query) ||
       (product.description && product.description.toLowerCase().includes(query))
     );
     renderProducts(filteredProducts);
+
+    // Suggestions Logic
+    if (suggestionsContainer) {
+      suggestionsContainer.innerHTML = "";
+      if (query.length > 0) {
+        const suggestions = allProducts.filter(p => p.name.toLowerCase().includes(query));
+        if (suggestions.length > 0) {
+          suggestions.slice(0, 5).forEach(p => {
+            const div = document.createElement("div");
+            div.className = "suggestion-item";
+            div.textContent = p.name;
+            div.onclick = () => {
+              searchBar.value = p.name;
+              suggestionsContainer.innerHTML = "";
+              performSearch();
+            };
+            suggestionsContainer.appendChild(div);
+          });
+        }
+      }
+    }
   }
+
+  // Hide suggestions when clicking outside
+  document.addEventListener("click", (e) => {
+    if (suggestionsContainer && !e.target.closest(".input-wrapper")) {
+      suggestionsContainer.innerHTML = "";
+    }
+  });
 
   function debounce(func, wait) {
     let timeout;
@@ -173,6 +234,24 @@ document.addEventListener("DOMContentLoaded", () => {
     searchBar.placeholder = "Pesquisar por nome ou descrição...";
     searchBar.addEventListener("input", debounce(performSearch, 300));
   }
+
+  // Reading Progress Bar Logic
+  window.addEventListener("scroll", () => {
+    if (!sobreSection || !progressBar) return;
+    const sectionTop = sobreSection.offsetTop;
+    const sectionHeight = sobreSection.offsetHeight;
+    const scrollTop = window.scrollY;
+    const windowHeight = window.innerHeight;
+
+    const distance = scrollTop - sectionTop;
+    const total = sectionHeight - windowHeight;
+    let percentage = 0;
+
+    if (total > 0) {
+      percentage = (distance / total) * 100;
+    }
+    progressBar.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
+  });
 
   // Carousel Logic
   function renderCarousel() {
@@ -192,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const img = document.createElement("img");
         img.src = media.src;
         img.alt = "Product Image";
-        img.loading = "lazy";
+        img.loading = "eager";
 
         img.onload = () => {
           spinner.remove();
@@ -240,6 +319,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (dots[currentCarouselIndex]) {
         dots[currentCarouselIndex].className += " active";
+      }
+    }
+
+    // Preload next image
+    if (currentMedia.length > 1) {
+      const nextIndex = (currentCarouselIndex + 1) % currentMedia.length;
+      if (currentMedia[nextIndex].type !== 'video') {
+        const img = new Image();
+        img.src = currentMedia[nextIndex].src;
       }
     }
   }
@@ -291,23 +379,83 @@ document.addEventListener("DOMContentLoaded", () => {
   let initialDistance = 0;
   let initialScale = 1;
   let currentScale = 1;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let translateX = 0;
+  let translateY = 0;
+
+  function updateZoomTransform() {
+    zoomImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+  }
 
   function openZoom(src) {
     zoomModal.style.display = "block";
     zoomImg.src = src;
     currentScale = 1;
-    zoomImg.style.transform = `scale(1)`;
+    translateX = 0;
+    translateY = 0;
+    zoomImg.style.transform = ""; // Limpa transformações inline para permitir animação CSS
+    zoomImg.style.cursor = "grab";
+  }
+
+  if (resetZoomBtn) {
+    resetZoomBtn.onclick = () => {
+      currentScale = 1;
+      translateX = 0;
+      translateY = 0;
+      updateZoomTransform();
+      zoomImg.style.cursor = "grab";
+    };
   }
 
   if (closeZoom) {
     closeZoom.onclick = () => {
       zoomModal.style.display = "none";
       currentScale = 1;
-      zoomImg.style.transform = `scale(1)`;
+      translateX = 0;
+      translateY = 0;
+      zoomImg.style.transform = "";
     };
   }
 
-  // Pinch to Zoom Logic
+  // Mouse Wheel Zoom
+  zoomImg.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = Math.sign(e.deltaY) * -0.2;
+    const newScale = Math.min(Math.max(1, currentScale + delta), 4);
+    currentScale = newScale;
+    updateZoomTransform();
+  }, { passive: false });
+
+  // Mouse Events for Pan (Desktop)
+  zoomImg.addEventListener("mousedown", (e) => {
+    if (currentScale > 1) {
+      isDragging = true;
+      startX = e.clientX - translateX;
+      startY = e.clientY - translateY;
+      zoomImg.style.cursor = "grabbing";
+      e.preventDefault();
+    }
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (isDragging && currentScale > 1) {
+      e.preventDefault();
+      translateX = e.clientX - startX;
+      translateY = e.clientY - startY;
+      updateZoomTransform();
+    }
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      zoomImg.style.cursor = "grab";
+    }
+  });
+
+  // Touch Events for Pinch & Pan (Mobile)
   zoomImg.addEventListener("touchstart", (e) => {
     if (e.touches.length === 2) {
       e.preventDefault();
@@ -316,6 +464,10 @@ document.addEventListener("DOMContentLoaded", () => {
         e.touches[0].pageY - e.touches[1].pageY
       );
       initialScale = currentScale;
+    } else if (e.touches.length === 1 && currentScale > 1) {
+      isDragging = true;
+      startX = e.touches[0].clientX - translateX;
+      startY = e.touches[0].clientY - translateY;
     }
   });
 
@@ -328,15 +480,26 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       const scaleChange = currentDistance / initialDistance;
       currentScale = Math.min(Math.max(1, initialScale * scaleChange), 4); // Min 1x, Max 4x
-      zoomImg.style.transform = `scale(${currentScale})`;
+      updateZoomTransform();
+    } else if (e.touches.length === 1 && isDragging && currentScale > 1) {
+      e.preventDefault();
+      translateX = e.touches[0].clientX - startX;
+      translateY = e.touches[0].clientY - startY;
+      updateZoomTransform();
     }
+  });
+
+  zoomImg.addEventListener("touchend", (e) => {
+    if (e.touches.length === 0) isDragging = false;
   });
 
   window.addEventListener("click", (e) => {
     if (e.target === zoomModal) {
       zoomModal.style.display = "none";
       currentScale = 1;
-      zoomImg.style.transform = `scale(1)`;
+      translateX = 0;
+      translateY = 0;
+      zoomImg.style.transform = "";
     }
   });
 
@@ -371,6 +534,36 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCarousel();
 
     const downloadBtn = document.querySelector(".download-btn");
+    const shareActionBtn = document.querySelector(".share-action-btn");
+
+    // Share Button Logic
+    if (shareActionBtn) {
+      shareActionBtn.onclick = () => {
+        const shareUrl = window.location.href;
+        const shareText = `Confira este software incrível: ${product.name}`;
+
+        // Update Links
+        if (shareWhatsapp) shareWhatsapp.href = `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`;
+        if (shareFacebook) shareFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+        if (shareX) shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+        if (shareInstagram) shareInstagram.href = "https://www.instagram.com/";
+
+        // Copy Link Logic
+        if (shareCopy) {
+          shareCopy.onclick = () => {
+            navigator.clipboard.writeText(`${shareText} ${shareUrl}`).then(() => {
+              const originalText = shareCopy.textContent;
+              shareCopy.textContent = "Copiado!";
+              setTimeout(() => {
+                shareCopy.textContent = originalText;
+              }, 2000);
+            });
+          };
+        }
+
+        if (shareModal) shareModal.style.display = "block";
+      };
+    }
 
     // Reset button state
     downloadBtn.classList.remove("downloading");
@@ -396,7 +589,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.target == modal) {
       modal.style.display = "none";
     }
+    if (event.target == shareModal) {
+      shareModal.style.display = "none";
+    }
   });
+
+  if (closeShareBtn) {
+    closeShareBtn.addEventListener("click", () => {
+      if (shareModal) shareModal.style.display = "none";
+    });
+  }
 
   // Theme Toggle Logic
   if (themeToggleBtn) {
