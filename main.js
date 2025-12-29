@@ -72,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const contactForm = document.getElementById("contact-form");
   const stars = document.querySelectorAll('.star');
   const ratingCountElem = document.getElementById('rating-count');
+  const privacyModal = document.getElementById("privacy-modal");
 
   // --- Custom Alert & Prompt System ---
   // Injeta o HTML do modal de alerta no corpo da página
@@ -1631,6 +1632,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.target == welcomeModal) {
       closeWelcome();
     }
+    if (event.target == privacyModal) {
+      closeModalWithFade(privacyModal);
+    }
   });
 
   if (closeShareBtn) {
@@ -1651,6 +1655,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (newsModal && newsModal.style.display === "block") closeModalWithFade(newsModal);
       if (welcomeModal && welcomeModal.style.display === "block") closeWelcome();
       if (contactModal && contactModal.style.display === "block") closeModalWithFade(contactModal);
+      if (privacyModal && privacyModal.style.display === "block") closeModalWithFade(privacyModal);
 
       // Close burger menu
       if (navMenu && navMenu.classList.contains("active")) {
@@ -1669,16 +1674,34 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="footer-container">
         <p>&copy; ${currentYear} SoftSafe — Todos os direitos reservados</p>
         <div class="footer-socials">
-          <a href="https://facebook.com" target="_blank">Facebook</a>
-          <a href="https://instagram.com" target="_blank">Instagram</a>
-          <a href="https://twitter.com" target="_blank">X</a>
+          <a href="https://facebook.com" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://instagram.com" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="https://twitter.com" target="_blank" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
         </div>
         <div class="footer-legal">
-          <a href="#" onclick="event.preventDefault(); customAlert('Política de Privacidade em construção', 'Info')">Política de Privacidade</a>
+          <a href="#" id="privacy-link">Política de Privacidade</a>
         </div>
       </div>
     `;
+
+    // Privacy Modal Logic
+    const privacyLink = document.getElementById("privacy-link");
+    if (privacyLink && privacyModal) {
+      privacyLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        privacyModal.style.display = "block";
+      });
+    }
   }
+
+  // Close Privacy Modal Logic
+  document.querySelectorAll(".close-privacy, .close-privacy-btn").forEach(el => {
+    el.addEventListener("click", () => {
+      if (privacyModal) closeModalWithFade(privacyModal);
+    });
+  });
+
+  // Close privacy modal on outside click (handled by generic window click listener below)
 });
 
 function scrollToProducts() {
