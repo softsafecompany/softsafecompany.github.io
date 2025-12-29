@@ -125,6 +125,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Active Section Indicator
+  const sections = document.querySelectorAll("section[id], footer[id]");
+  const navLinks = document.querySelectorAll("#nav-menu a");
+
+  function highlightNav() {
+    let scrollY = window.scrollY;
+
+    sections.forEach(current => {
+      const sectionHeight = current.offsetHeight;
+      const sectionTop = current.offsetTop - 150;
+      const sectionId = current.getAttribute("id");
+
+      if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+        navLinks.forEach(link => {
+          link.classList.remove("active");
+          if (link.getAttribute("href").includes(sectionId)) {
+            link.classList.add("active");
+          }
+        });
+      }
+    });
+  }
+
+  window.addEventListener("scroll", highlightNav);
+
   // WhatsApp Shake Logic
   const whatsappBtn = document.querySelector(".whatsapp-float");
   if (whatsappBtn) {

@@ -44,8 +44,17 @@ body {
   transition: width 0.3s ease-in-out;
 }
 
-.header a:hover::after {
+.header a:hover {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.header a:hover::after,
+.header a.active::after {
   width: 100%;
+}
+
+.header a.active {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
 }
 
 .logo {
@@ -1030,38 +1039,4 @@ body.dark-mode .close-share:hover {
     transform: translateY(100vh) rotate(720deg);
     opacity: 0;
   }
-}
-
-/* Back to Top Button */
-.back-to-top {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  display: none;
-  background-color: #1f4cff;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  font-size: 24px;
-  cursor: pointer;
-  z-index: 1000;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-  transition: opacity 0.3s, transform 0.3s, background-color 0.3s;
-}
-
-.back-to-top:hover {
-  background-color: #3a66ff;
-  transform: scale(1.1);
-}
-
-/* Welcome Modal Specifics */
-.welcome-content {
-  text-align: center;
-}
-
-.close-welcome {
-  /* Inherits from .close but can be customized */
-  @extend .close;
 }
