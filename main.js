@@ -1272,7 +1272,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       function renderCommentNode(c) {
-        const isLiked = false; // Implementar verificação de like de comentário com subcoleção se necessário
         const div = document.createElement("div");
         div.className = "comment";
         div.id = `comment-${c.id}`;
@@ -1283,7 +1282,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${c.text}</p>
           ${c.image ? `<img src="${c.image}" class="comment-img" style="cursor:zoom-in">` : ''}
           <div class="comment-actions">
-             <button class="comment-like-btn ${isLiked ? 'liked' : ''}" onclick="toggleCommentLike(${newsId}, '${c.id}')">
+             <button id="comment-like-btn-${c.id}" class="comment-like-btn" onclick="toggleCommentLike(${newsId}, '${c.id}')">
                👍 <span id="comment-like-count-${c.id}">${c.likes || 0}</span>
              </button>
              <button class="reply-btn" onclick="toggleReplyForm('${c.id}')">Responder</button>
@@ -1314,6 +1313,17 @@ document.addEventListener("DOMContentLoaded", () => {
       roots.forEach(c => {
         container.appendChild(renderCommentNode(c));
       });
+
+      // Check likes for current user
+      if (currentUser) {
+        comments.forEach(c => {
+          const likeRef = doc(db, "news_stats", String(newsId), "comments", String(c.id), "likes", currentUser.uid);
+          getDoc(likeRef).then(snap => {
+            const btn = document.getElementById(`comment-like-btn-${c.id}`);
+            if (btn && snap.exists() && snap.data().active) btn.classList.add('liked');
+          });
+        });
+      }
     }, (error) => {
       console.warn("Erro ao carregar comentários:", error.code);
       container.innerHTML = `<p style="color: #888; font-size: 0.9rem;">Comentários indisponíveis (Verifique as regras do Firebase).</p>`;
@@ -1347,9 +1357,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!currentUser) {
       return customAlert("Você precisa estar conectado para curtir.", "Aviso");
     }
-    // Simplificação: Apenas incrementa no Firestore. Para toggle real, precisa de subcoleção de likes por usuário.
+
+    const likeRef = doc(db, "news_stats", String(newsId), "comments", String(commentId), "likes", currentUser.uid);
     const commentRef = doc(db, "news_stats", String(newsId), "comments", String(commentId));
-    updateDoc(commentRef, { likes: increment(1) }).catch((error) => {
+
+    getDoc(likeRef).then((docSnap) => {
+      const isLiked = docSnap.exists() && docSnap.data().active;
+
+      if (isLiked) {
+        updateDoc(likeRef, { active: false });
+        updateDoc(commentRef, { likes: increment(-1) });
+        document.getElementById(`comment-like-btn-${commentId}`).classList.remove("liked");
+      } else {
+        setDoc(likeRef, { active: true }, { merge: true });
+        updateDoc(commentRef, { likes: increment(1) });
+        document.getElementById(`comment-like-btn-${commentId}`).classList.add("liked");
+      }
+    }).catch((error) => {
       console.error("Erro ao curtir comentário:", error);
       customAlert("Erro ao curtir. Verifique sua conexão ou login.", "Erro");
     });
