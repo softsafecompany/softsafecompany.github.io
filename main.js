@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, collection, doc, getDoc, setDoc, updateDoc, increment, onSnapshot, addDoc, query, orderBy, getDocs, where, runTransaction, deleteDoc
+  getFirestore, collection, doc, getDoc, setDoc, updateDoc, increment, onSnapshot, addDoc, query, orderBy, getDocs, where, runTransaction, deleteDoc, collectionGroup, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 
@@ -152,12 +152,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  window.customPrompt = function (message, title = "Entrada") {
+  window.customPrompt = function (message, title = "Entrada", isPassword = false) {
     return new Promise((resolve) => {
       dialogTitle.textContent = title;
       dialogMessage.textContent = message;
       dialogInputContainer.style.display = 'block';
       dialogInput.value = '';
+      dialogInput.type = isPassword ? 'password' : 'text';
       dialogCancel.style.display = 'inline-block';
       dialogOverlay.classList.add('active');
       dialogInput.focus();
@@ -2592,29 +2593,67 @@ document.addEventListener("DOMContentLoaded", () => {
       customConfirm("Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita e todos os seus dados serão perdidos.", "Excluir Conta", "Excluir", "Cancelar").then((confirmed) => {
         if (confirmed) {
           if (currentUser) {
-            toggleLoading(true);
-            // Tentar excluir dados do Firestore primeiro
-            deleteDoc(doc(db, "users", currentUser.uid))
-              .then(() => {
-                // Excluir usuário da autenticação
-                return deleteUser(currentUser);
-              })
-              .then(() => {
-                toggleLoading(false);
-                showToast("Conta excluída com sucesso.", "success");
-                window.location.href = "index.html";
-              })
-              .catch((error) => {
-                toggleLoading(false);
-                console.error("Erro ao excluir conta:", error);
-                if (error.code === 'auth/requires-recent-login') {
-                  customAlert("Por segurança, é necessário fazer login novamente antes de excluir sua conta.", "Login Necessário").then(() => {
-                    signOut(auth).then(() => window.location.href = "index.html");
-                  });
-                } else {
-                  showToast("Erro ao excluir conta: " + error.message, "error");
+            const performDelete = () => {
+              toggleLoading(true);
+              const batch = writeBatch(db);
+
+              // 1. Preparar exclusão do perfil
+              batch.delete(doc(db, "users", currentUser.uid));
+
+              // 2. Tentar buscar e excluir comentários (Requer índice 'userId' em collectionGroup 'comments')
+              const commentsQuery = query(collectionGroup(db, 'comments'), where('userId', '==', currentUser.uid));
+
+              getDocs(commentsQuery)
+                .then((snapshot) => {
+                  snapshot.forEach((doc) => batch.delete(doc.ref));
+                  return batch.commit();
+                })
+                .catch((err) => {
+                  console.warn("Erro ao limpar comentários (provavelmente falta índice):", err);
+                  // Se falhar a busca de comentários, tenta excluir apenas o usuário
+                  return deleteDoc(doc(db, "users", currentUser.uid));
+                })
+                .then(() => deleteUser(currentUser))
+                .then(() => {
+                  toggleLoading(false);
+                  showToast("Conta excluída com sucesso.", "success");
+                  window.location.href = "index.html";
+                })
+                .catch((error) => {
+                  toggleLoading(false);
+                  console.error("Erro ao excluir conta:", error);
+                  if (error.code === 'auth/requires-recent-login') {
+                    customAlert("Por segurança, é necessário fazer login novamente antes de excluir sua conta.", "Login Necessário").then(() => {
+                      signOut(auth).then(() => window.location.href = "index.html");
+                    });
+                  } else {
+                    showToast("Erro ao excluir conta: " + error.message, "error");
+                  }
+                });
+            };
+
+            // Verificar se é login por senha para pedir confirmação
+            const isPasswordAuth = currentUser.providerData.some(p => p.providerId === 'password');
+
+            if (isPasswordAuth) {
+              customPrompt("Digite sua senha para confirmar a exclusão:", "Verificação de Segurança", true).then((password) => {
+                if (password) {
+                  toggleLoading(true);
+                  const credential = EmailAuthProvider.credential(currentUser.email, password);
+                  reauthenticateWithCredential(currentUser, credential)
+                    .then(() => {
+                      toggleLoading(false);
+                      performDelete();
+                    })
+                    .catch((error) => {
+                      toggleLoading(false);
+                      showToast("Senha incorreta.", "error");
+                    });
                 }
               });
+            } else {
+              performDelete();
+            }
           }
         }
       });
