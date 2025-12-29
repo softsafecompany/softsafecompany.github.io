@@ -1041,3 +1041,239 @@ body.dark-mode .close-share:hover {
     opacity: 0;
   }
 }
+
+/* News Page Styles */
+.news-section {
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  align-items: center;
+}
+
+.news-card {
+  background: #f4f4f4;
+  color: #000;
+  padding: 30px;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 800px;
+  /* Um pouco maior que os cards de produto */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+body.dark-mode .news-card {
+  background-color: #1e1e1e;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.news-card img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.news-card h3 {
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+  color: #1f4cff;
+}
+
+.news-card p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.news-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #1f4cff;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.news-link:hover {
+  text-decoration: underline;
+}
+
+.like-btn {
+  background: none;
+  border: 1px solid #ddd;
+  padding: 5px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  color: #555;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+}
+
+.like-btn.liked {
+  color: #e74c3c;
+  border-color: #e74c3c;
+  background-color: rgba(231, 76, 60, 0.1);
+}
+
+body.dark-mode .like-btn {
+  border-color: #444;
+  color: #ccc;
+}
+
+body.dark-mode .like-btn.liked {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+/* Comments Section */
+.comments-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.comment-form input,
+.comment-form textarea {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  width: 100%;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.comment {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  gap: 15px;
+}
+
+body.dark-mode .comment {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.comment-content h5 {
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.comment-img {
+  max-width: 150px;
+  margin-top: 10px;
+  border-radius: 5px;
+  display: block;
+}
+
+.comment-actions {
+  margin-top: 5px;
+}
+
+.comment-like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #777;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.comment-like-btn.liked {
+  color: #1f4cff;
+}
+
+.sort-comments-select {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+}
+
+body.dark-mode .sort-comments-select {
+  background-color: #333;
+  color: #fff;
+  border-color: #555;
+}
+
+/* Nested Comments / Replies */
+.comment-reply-container {
+  margin-left: 10px;
+  margin-top: 10px;
+  border-left: 2px solid #ddd;
+  padding-left: 10px;
+}
+
+.reply-btn {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-left: 15px;
+  font-weight: 500;
+}
+
+.reply-btn:hover {
+  color: #1f4cff;
+  text-decoration: underline;
+}
+
+.reply-form-container {
+  margin-top: 10px;
+  display: none;
+}
+
+.reply-form-container.active {
+  display: block;
+}
+
+/* Remove background for nested comments to prevent stacking darkness */
+.comment .comment {
+  background: transparent;
+  padding: 10px 0 0 0;
+}

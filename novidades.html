@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novidades | Soft Safe</title>
+  <link rel="shortcut icon" href="assets/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="menu-overlay" class="menu-overlay"></div>
+  <header class="header">
+    <div class="logo" onclick="window.location.href='index.html'">
+      <img src="assets/logo.png" alt="Soft Safe Logo" height="37">
+      <h2>SoftSafe</h2>
+    </div>
+    <div class="burger-menu" id="burger-menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <nav id="nav-menu">
+      <a href="index.html#produtos">Produtos</a>
+      <a href="novidades.html" class="active">Novidades</a>
+      <a href="index.html#sobre">Sobre</a>
+      <a href="index.html#contato">Contato</a>
+      <button id="theme-toggle" class="theme-toggle" title="Alternar Tema">🌙</button>
+    </nav>
+  </header>
+
+  <section class="hero" style="padding: 60px 40px; min-height: auto;">
+    <h2>Novidades e Atualizações</h2>
+    <p>Fique por dentro de tudo o que acontece na SoftSafe</p>
+  </section>
+
+  <section class="news-section">
+    <div id="news-list" class="news-list">
+      <!-- Notícias serão inseridas aqui via JS -->
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>&copy; 2025 SoftSafe — Todos os direitos reservados</p>
+  </footer>
+
+  <!-- Back to Top Button -->
+  <button id="back-to-top" class="back-to-top" title="Voltar ao Topo">↑</button>
+
+  <script src="main.js"></script>
+</body>
+</html>

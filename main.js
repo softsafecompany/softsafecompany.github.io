@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const navMenu = document.getElementById("nav-menu");
   const menuOverlay = document.getElementById("menu-overlay");
   const scrollIndicator = document.getElementById("scroll-indicator");
+  const newsList = document.getElementById("news-list");
 
   // Burger Menu Logic
   if (burgerMenu && navMenu) {
@@ -194,7 +195,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentCarouselIndex = 0;
   let currentMedia = [];
 
+  // Product Logic (Only if productList exists)
   function showSkeleton() {
+    if (!productList) return;
     productList.innerHTML = "";
     for (let i = 0; i < 3; i++) {
       const skeletonHTML = `
@@ -208,22 +211,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Create Load More Button
-  const loadMoreBtn = document.createElement("button");
-  loadMoreBtn.textContent = "Carregar Mais";
-  loadMoreBtn.className = "load-more-btn";
-  productList.parentNode.insertBefore(loadMoreBtn, productList.nextSibling);
+  let loadMoreBtn;
+  if (productList) {
+    // Create Load More Button
+    loadMoreBtn = document.createElement("button");
+    loadMoreBtn.textContent = "Carregar Mais";
+    loadMoreBtn.className = "load-more-btn";
+    productList.parentNode.insertBefore(loadMoreBtn, productList.nextSibling);
 
-  // Event Delegation for View More
-  productList.addEventListener("click", (e) => {
-    if (e.target.classList.contains("view-more-btn")) {
-      const productId = parseInt(e.target.getAttribute("data-id"));
-      const product = allProducts.find(p => p.id === productId);
-      openModal(product);
-    }
-  });
+    // Event Delegation for View More
+    productList.addEventListener("click", (e) => {
+      if (e.target.classList.contains("view-more-btn")) {
+        const productId = parseInt(e.target.getAttribute("data-id"));
+        const product = allProducts.find(p => p.id === productId);
+        openModal(product);
+      }
+    });
+
+    loadMoreBtn.addEventListener("click", () => {
+      currentPage++;
+      renderBatch();
+    });
+  }
 
   function renderBatch() {
+    if (!productList) return;
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     const end = currentPage * ITEMS_PER_PAGE;
     const productsToRender = currentFilteredProducts.slice(start, end);
@@ -305,6 +317,291 @@ document.addEventListener("DOMContentLoaded", () => {
         renderProducts(allProducts);
       });
   }
+
+  // News Logic
+  let allNews = [];
+  let currentNewsPage = 1;
+  const NEWS_PER_PAGE = 3;
+  let loadMoreNewsBtn;
+  const commentSortPrefs = {};
+
+  if (newsList) {
+    // Create Load More Button for News
+    loadMoreNewsBtn = document.createElement("button");
+    loadMoreNewsBtn.textContent = "Carregar Mais";
+    loadMoreNewsBtn.className = "load-more-btn";
+    newsList.parentNode.insertBefore(loadMoreNewsBtn, newsList.nextSibling);
+
+    loadMoreNewsBtn.addEventListener("click", () => {
+      currentNewsPage++;
+      renderNewsBatch();
+    });
+
+    fetch("news.json")
+      .then(res => res.json())
+      .then(data => {
+        allNews = data;
+        renderNewsBatch();
+      });
+  }
+
+  function renderNewsBatch() {
+    if (currentNewsPage === 1) newsList.innerHTML = "";
+
+    const start = (currentNewsPage - 1) * NEWS_PER_PAGE;
+    const end = currentNewsPage * NEWS_PER_PAGE;
+    const newsToRender = allNews.slice(start, end);
+
+    newsToRender.forEach(item => {
+      const likeData = getNewsLikeState(item.id);
+      const likeClass = likeData.liked ? "liked" : "";
+
+      const card = document.createElement("div");
+      card.className = "news-card";
+
+      let extraContent = "";
+      if (item.extra_image) extraContent += `<img src="${item.extra_image}" alt="Extra">`;
+      if (item.extra_text) extraContent += `<p>${item.extra_text}</p>`;
+      if (item.link) extraContent += `<a href="${item.link}" class="news-link" target="_blank">Saiba Mais</a>`;
+
+      card.innerHTML = `
+        <h3>${item.title}</h3>
+        <img src="${item.image}" alt="${item.title}">
+        <p>${item.text}</p>
+        ${extraContent}
+        <button class="like-btn ${likeClass}" onclick="toggleNewsLike(${item.id})" id="news-like-btn-${item.id}">
+          ❤️ <span id="news-like-count-${item.id}">${likeData.count}</span>
+        </button>
+        
+        <div class="comments-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin:0;">Comentários</h4>
+            <select class="sort-comments-select" onchange="sortComments(${item.id}, this.value)">
+              <option value="newest">Mais Recentes</option>
+              <option value="oldest">Mais Antigos</option>
+              <option value="likes">Mais Curtidos</option>
+            </select>
+          </div>
+          <div class="comment-list" id="comments-${item.id}"></div>
+          <form class="comment-form" data-id="${item.id}">
+            <input type="text" placeholder="Seu nome" required>
+            <textarea placeholder="Seu comentário" required></textarea>
+            <input type="file" accept="image/*">
+            <button type="submit" class="download-btn" style="width: fit-content;">Comentar</button>
+          </form>
+        </div>
+      `;
+      newsList.appendChild(card);
+      loadComments(item.id);
+    });
+
+    if (allNews.length > end) {
+      loadMoreNewsBtn.style.display = "block";
+    } else {
+      loadMoreNewsBtn.style.display = "none";
+    }
+
+    // Handle Comment Submission
+    document.querySelectorAll(".comment-form").forEach(form => {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const newsId = form.getAttribute("data-id");
+        const name = form.querySelector("input[type='text']").value;
+        const text = form.querySelector("textarea").value;
+        const fileInput = form.querySelector("input[type='file']");
+
+        if (fileInput.files.length > 0) {
+          compressImage(fileInput.files[0], (compressedImg) => {
+            saveComment(newsId, name, text, compressedImg);
+            form.reset();
+          });
+        } else {
+          saveComment(newsId, name, text, null);
+          form.reset();
+        }
+      });
+    });
+  }
+
+  // Expose Like functions to window
+  window.toggleNewsLike = function (id) {
+    const storage = JSON.parse(localStorage.getItem("softsafe_news_likes_data") || "{}");
+    if (!storage[id]) storage[id] = { count: 0, liked: false };
+
+    if (storage[id].liked) {
+      storage[id].count--;
+      storage[id].liked = false;
+    } else {
+      storage[id].count++;
+      storage[id].liked = true;
+    }
+    localStorage.setItem("softsafe_news_likes_data", JSON.stringify(storage));
+
+    const btn = document.getElementById(`news-like-btn-${id}`);
+    const countSpan = document.getElementById(`news-like-count-${id}`);
+    if (btn) btn.classList.toggle("liked", storage[id].liked);
+    if (countSpan) countSpan.textContent = storage[id].count;
+  };
+
+  window.sortComments = function (newsId, criteria) {
+    commentSortPrefs[newsId] = criteria;
+    loadComments(newsId);
+  };
+
+  function getNewsLikeState(id) {
+    const storage = JSON.parse(localStorage.getItem("softsafe_news_likes_data") || "{}");
+    return storage[id] || { count: 0, liked: false };
+  }
+
+  function compressImage(file, callback) {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = event => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        // Quality 0.3 (approx 70% reduction/compression)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.3);
+        callback(dataUrl);
+      }
+    }
+  }
+
+  function saveComment(newsId, name, text, image, parentId = null) {
+    const comment = { id: Date.now(), name, text, image, date: new Date().toLocaleDateString(), likes: 0, parentId: parentId };
+    const key = `softsafe_comments_${newsId}`;
+    const comments = JSON.parse(localStorage.getItem(key) || "[]");
+    comments.push(comment);
+    localStorage.setItem(key, JSON.stringify(comments));
+    loadComments(newsId);
+  }
+
+  function loadComments(newsId) {
+    const key = `softsafe_comments_${newsId}`;
+    const comments = JSON.parse(localStorage.getItem(key) || "[]");
+    const container = document.getElementById(`comments-${newsId}`);
+    container.innerHTML = "";
+
+    const userLikedComments = JSON.parse(localStorage.getItem("softsafe_user_liked_comments") || "[]");
+
+    // Build Hierarchy
+    const commentMap = {};
+    const roots = [];
+
+    // Initialize map
+    comments.forEach(c => {
+      c.replies = [];
+      commentMap[c.id] = c;
+    });
+
+    // Link parents
+    comments.forEach(c => {
+      if (c.parentId && commentMap[c.parentId]) {
+        commentMap[c.parentId].replies.push(c);
+      } else {
+        roots.push(c);
+      }
+    });
+
+    const sortBy = commentSortPrefs[newsId] || 'newest';
+    if (sortBy === 'newest') {
+      roots.sort((a, b) => b.id - a.id);
+    } else if (sortBy === 'oldest') {
+      roots.sort((a, b) => a.id - b.id);
+    } else if (sortBy === 'likes') {
+      roots.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    }
+
+    function renderCommentNode(c) {
+      const isLiked = userLikedComments.includes(c.id);
+      const div = document.createElement("div");
+      div.className = "comment";
+      div.id = `comment-${c.id}`;
+      div.innerHTML = `
+        <div class="comment-avatar">👤</div>
+        <div class="comment-content">
+          <h5>${c.name} <small style="font-weight:normal; color:#888;">${c.date}</small></h5>
+          <p>${c.text}</p>
+          ${c.image ? `<img src="${c.image}" class="comment-img" onclick="openZoom('${c.image}')" style="cursor:zoom-in">` : ''}
+          <div class="comment-actions">
+             <button class="comment-like-btn ${isLiked ? 'liked' : ''}" onclick="toggleCommentLike(${newsId}, ${c.id})">
+               👍 <span id="comment-like-count-${c.id}">${c.likes || 0}</span>
+             </button>
+             <button class="reply-btn" onclick="toggleReplyForm(${c.id})">Responder</button>
+          </div>
+          
+          <div id="reply-form-${c.id}" class="reply-form-container">
+            <form class="comment-form" onsubmit="submitReply(event, ${newsId}, ${c.id})">
+              <input type="text" placeholder="Seu nome" required>
+              <textarea placeholder="Sua resposta" required></textarea>
+              <button type="submit" class="download-btn" style="width: fit-content; font-size: 0.8rem; padding: 8px 15px;">Enviar</button>
+            </form>
+          </div>
+
+          <div class="comment-reply-container" id="replies-${c.id}"></div>
+        </div>
+      `;
+
+      if (c.replies.length > 0) {
+        c.replies.sort((a, b) => a.id - b.id); // Replies usually chronological
+        const replyContainer = div.querySelector(`#replies-${c.id}`);
+        c.replies.forEach(reply => {
+          replyContainer.appendChild(renderCommentNode(reply));
+        });
+      }
+      return div;
+    }
+
+    roots.forEach(c => {
+      container.appendChild(renderCommentNode(c));
+    });
+  }
+
+  window.toggleReplyForm = function (commentId) {
+    const form = document.getElementById(`reply-form-${commentId}`);
+    if (form) {
+      form.classList.toggle('active');
+    }
+  };
+
+  window.submitReply = function (e, newsId, parentId) {
+    e.preventDefault();
+    const form = e.target;
+    const name = form.querySelector("input").value;
+    const text = form.querySelector("textarea").value;
+
+    saveComment(newsId, name, text, null, parentId);
+  };
+
+  window.toggleCommentLike = function (newsId, commentId) {
+    const key = `softsafe_comments_${newsId}`;
+    const comments = JSON.parse(localStorage.getItem(key) || "[]");
+    const commentIndex = comments.findIndex(c => c.id === commentId);
+
+    if (commentIndex === -1) return;
+
+    const userLikedKey = "softsafe_user_liked_comments";
+    const userLiked = JSON.parse(localStorage.getItem(userLikedKey) || "[]");
+    const hasLiked = userLiked.includes(commentId);
+
+    if (hasLiked) {
+      comments[commentIndex].likes = (comments[commentIndex].likes || 1) - 1;
+      const idx = userLiked.indexOf(commentId);
+      if (idx > -1) userLiked.splice(idx, 1);
+    } else {
+      comments[commentIndex].likes = (comments[commentIndex].likes || 0) + 1;
+      userLiked.push(commentId);
+    }
+
+    localStorage.setItem(key, JSON.stringify(comments));
+    localStorage.setItem(userLikedKey, JSON.stringify(userLiked));
+    loadComments(newsId);
+  };
 
   // Search functionality
   function performSearch() {
@@ -556,6 +853,11 @@ document.addEventListener("DOMContentLoaded", () => {
     zoomImg.style.transform = ""; // Limpa transformações inline para permitir animação CSS
     zoomImg.style.cursor = "grab";
   }
+
+  // Expose openZoom to window for inline onclick handlers
+  window.openZoom = function (src) {
+    openZoom(src);
+  };
 
   if (resetZoomBtn) {
     resetZoomBtn.onclick = () => {

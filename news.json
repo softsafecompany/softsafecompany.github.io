@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "title": "Lançamento SoftSafe 2.0",
+        "image": "assets/product.png",
+        "text": "Estamos orgulhosos em anunciar a nova versão do nosso software principal. Com melhorias de performance e novas funcionalidades de IA, o SoftSafe 2.0 redefine o que é possível fazer offline.",
+        "extra_image": "assets/product.png",
+        "extra_text": "Confira as notas de atualização completas no nosso portal.",
+        "link": "#"
+    },
+    {
+        "id": 2,
+        "title": "Dicas de Segurança",
+        "image": "assets/product.png",
+        "text": "Mantenha seu sistema seguro com nossas novas ferramentas de monitoramento em tempo real. A prevenção é a melhor defesa.",
+        "link": "https://google.com"
+    }
+]
