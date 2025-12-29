@@ -267,6 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderProducts(products) {
+    if (!productList) return;
     productList.innerHTML = "";
     currentFilteredProducts = products;
     currentPage = 1;
@@ -279,11 +280,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     renderBatch();
   }
-
-  loadMoreBtn.addEventListener("click", () => {
-    currentPage++;
-    renderBatch();
-  });
 
   // Fetch product data with Cache
   showSkeleton();
@@ -366,6 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       card.innerHTML = `
         <h3>${item.title}</h3>
+        ${item.date ? `<p style="color: #888; font-size: 0.9rem; margin-bottom: 15px;">📅 ${item.date}</p>` : ''}
         <img src="${item.image}" alt="${item.title}">
         <p>${item.text}</p>
         ${extraContent}
@@ -391,18 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </form>
         </div>
       `;
-      newsList.appendChild(card);
-      loadComments(item.id);
-    });
-
-    if (allNews.length > end) {
-      loadMoreNewsBtn.style.display = "block";
-    } else {
-      loadMoreNewsBtn.style.display = "none";
-    }
-
-    // Handle Comment Submission
-    document.querySelectorAll(".comment-form").forEach(form => {
+      const form = card.querySelector(".comment-form");
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         const newsId = form.getAttribute("data-id");
@@ -420,7 +406,16 @@ document.addEventListener("DOMContentLoaded", () => {
           form.reset();
         }
       });
+
+      newsList.appendChild(card);
+      loadComments(item.id);
     });
+
+    if (allNews.length > end) {
+      loadMoreNewsBtn.style.display = "block";
+    } else {
+      loadMoreNewsBtn.style.display = "none";
+    }
   }
 
   // Expose Like functions to window

@@ -61,10 +61,10 @@ body {
   display: flex;
   align-items: center;
   cursor: pointer;
+}
 
-  &:hover {
-    opacity: 0.8;
-  }
+.logo:hover {
+  opacity: 0.8;
 }
 
 .logo h2 {
@@ -217,11 +217,11 @@ body.menu-open .back-to-top {
   border-radius: 7px;
   font-size: medium;
   font-weight: 500;
+}
 
-  &:hover {
-    color: rgb(255, 255, 255);
-    background: #3f5cc5;
-  }
+.hero button:hover {
+  color: rgb(255, 255, 255);
+  background: #3f5cc5;
 }
 
 /* Scroll Indicator */
@@ -312,11 +312,11 @@ body.menu-open .back-to-top {
   padding: 10px 20px;
   color: #e1e2e3;
   cursor: pointer;
+}
 
-  &:hover {
-    color: rgb(255, 255, 255);
-    background: #3f9fc5;
-  }
+.produto button:hover {
+  color: rgb(255, 255, 255);
+  background: #3f9fc5;
 }
 
 .footer {
@@ -337,6 +337,17 @@ body.menu-open .back-to-top {
   height: 100%;
   overflow: auto;
   background-color: rgba(0, 0, 0, 0.8);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -349,6 +360,19 @@ body.menu-open .back-to-top {
   max-width: 600px;
   border-radius: 10px;
   position: relative;
+  animation: modalSlideIn 0.4s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .close {
@@ -388,10 +412,10 @@ body.menu-open .back-to-top {
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.3s;
+}
 
-  &:hover {
-    background-color: #3a66ff;
-  }
+.download-btn:hover {
+  background-color: #3a66ff;
 }
 
 .download-btn.downloading {
@@ -1018,6 +1042,30 @@ body.dark-mode .close-share:hover {
   animation: shake 1s ease-in-out;
 }
 
+/* Back to Top Button */
+.back-to-top {
+  display: none;
+  /* Controlado pelo JS */
+  position: fixed;
+  bottom: 90px;
+  /* Acima do botão WhatsApp */
+  right: 20px;
+  padding: 10px 15px;
+  background-color: #1f4cff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  z-index: 999;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.back-to-top:hover {
+  background-color: #3a66ff;
+  transform: translateY(-3px);
+}
+
 /* Confetti Effect */
 .confetti {
   position: fixed;
@@ -1068,10 +1116,20 @@ body.dark-mode .close-share:hover {
   transition: transform 0.3s, box-shadow 0.3s;
 }
 
+.news-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
 body.dark-mode .news-card {
   background-color: #1e1e1e;
   color: #fff;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .news-card:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+  border: 1px solid #444;
 }
 
 .news-card img {

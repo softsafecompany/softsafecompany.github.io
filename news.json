@@ -1,6 +1,7 @@
 [
     {
         "id": 1,
+        "date": "15/05/2025",
         "title": "Lançamento SoftSafe 2.0",
         "image": "assets/product.png",
         "text": "Estamos orgulhosos em anunciar a nova versão do nosso software principal. Com melhorias de performance e novas funcionalidades de IA, o SoftSafe 2.0 redefine o que é possível fazer offline.",
@@ -10,6 +11,7 @@
     },
     {
         "id": 2,
+        "date": "10/05/2025",
         "title": "Dicas de Segurança",
         "image": "assets/product.png",
         "text": "Mantenha seu sistema seguro com nossas novas ferramentas de monitoramento em tempo real. A prevenção é a melhor defesa.",
