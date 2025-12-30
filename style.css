@@ -2359,9 +2359,11 @@ body.dark-mode .theme-toggle-float {
   transition: opacity 0.3s;
 }
 
+/*
 .profile-img-wrapper:hover .profile-overlay {
   opacity: 1;
-}
+} 
+  */
 
 .edit-btn {
   background: none;
