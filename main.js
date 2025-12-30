@@ -89,6 +89,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileEmail = document.getElementById("profile-email");
   const profileImg = document.getElementById("profile-img");
   const profileImgContainer = document.getElementById("profile-img-container");
+  if (profileImgContainer) {
+    profileImgContainer.style.margin = "0 auto";
+    profileImgContainer.style.display = "flex";
+    profileImgContainer.style.justifyContent = "center";
+  }
   const profileUpload = document.getElementById("profile-upload");
   const editNameBtn = document.getElementById("edit-name-btn");
   const resetPasswordBtn = document.getElementById("reset-password-btn");
@@ -237,25 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Garantir que o spinner seja removido quando a página carregar completamente
   window.addEventListener('load', () => toggleLoading(false));
   setTimeout(() => toggleLoading(false), 8000); // Timeout de segurança
-
-  // Verificar resultado do login por redirecionamento (Correção para erro de Popup/COOP)
-  toggleLoading(true);
-  getRedirectResult(auth)
-    .then((result) => {
-      toggleLoading(false); // Garante que o spinner pare mesmo se não houver resultado (login normal)
-      if (result) {
-        showToast("Login realizado com sucesso!", "success");
-      }
-    })
-    .catch((error) => {
-      toggleLoading(false);
-      console.error("Erro no login por redirecionamento:", error);
-      if (error.code === 'auth/account-exists-with-different-credential') {
-        showToast("Conta já existe com credencial diferente.", "error");
-      } else if (error.code !== 'auth/user-cancelled') {
-        showToast("Erro ao fazer login.", "error");
-      }
-    });
 
   // --- Contact Modal Logic ---
   // Intercept links to #contato
@@ -539,16 +525,119 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (profileImgContainer && profileUpload) {
-    profileImgContainer.addEventListener("click", () => profileUpload.click());
+    // --- Profile Image Logic (Preview, Delete, Crop) ---
+    const profileModalsHTML = `
+      <div id="profile-preview-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px); z-index:10001; align-items:center; justify-content:center;">
+        <div style="background:var(--card-bg, #fff); width:60%; max-width:600px; padding:20px; border-radius:12px; text-align:center; position:relative; display:flex; flex-direction:column; gap:20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+          <h3 style="margin:0; color:var(--text-color, #333);">Foto de Perfil</h3>
+          <div style="width:100%; height:300px; display:flex; align-items:center; justify-content:center; background:#f0f0f0; border-radius:8px; overflow:hidden;">
+            <img id="profile-preview-img" src="" style="max-width:100%; max-height:100%; object-fit:contain;">
+          </div>
+          <div style="display:flex; justify-content:space-between; width:100%; gap:10px;">
+            <button id="btn-delete-photo" style="flex:1; background:#e74c3c; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;">Apagar</button>
+            <button id="btn-change-photo" style="flex:1; background:#3498db; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;">Alterar</button>
+          </div>
+          <button id="close-profile-preview" style="position:absolute; top:10px; right:15px; background:transparent; border:none; font-size:24px; cursor:pointer; color:var(--text-color, #333);">&times;</button>
+        </div>
+      </div>
+
+      <div id="crop-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10002; align-items:center; justify-content:center; flex-direction:column;">
+        <div style="background:white; padding:20px; border-radius:10px; text-align:center;">
+          <h3 style="color:#333; margin-bottom:15px;">Ajustar Foto</h3>
+          <div id="crop-area" style="width:300px; height:300px; border:2px solid #333; overflow:hidden; position:relative; background:#ccc; margin:0 auto; cursor:grab;">
+            <img id="crop-img" src="" style="position:absolute; transform-origin: top left; pointer-events: none;">
+          </div>
+          <div style="margin:15px 0;">
+            <label style="color:#333;">Zoom: <input type="range" id="crop-zoom-range" min="0.5" max="3" step="0.1" value="1"></label>
+          </div>
+          <div style="display:flex; gap:10px; justify-content:center;">
+            <button id="btn-cancel-crop" style="background:#95a5a6; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">Cancelar</button>
+            <button id="btn-save-crop" style="background:#2ecc71; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">Salvar</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', profileModalsHTML);
+
+    const profilePreviewModal = document.getElementById("profile-preview-modal");
+    const profilePreviewImg = document.getElementById("profile-preview-img");
+    const btnDeletePhoto = document.getElementById("btn-delete-photo");
+    const btnChangePhoto = document.getElementById("btn-change-photo");
+    const closeProfilePreview = document.getElementById("close-profile-preview");
+
+    const cropModal = document.getElementById("crop-modal");
+    const cropImg = document.getElementById("crop-img");
+    const cropArea = document.getElementById("crop-area");
+    const cropZoomRange = document.getElementById("crop-zoom-range");
+    const btnCancelCrop = document.getElementById("btn-cancel-crop");
+    const btnSaveCrop = document.getElementById("btn-save-crop");
+
+    let cropState = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+
+    profileImgContainer.addEventListener("click", () => {
+      if (profileImg) {
+        profilePreviewImg.src = profileImg.src;
+        profilePreviewModal.style.display = "flex";
+      }
+    });
+
+    closeProfilePreview.addEventListener("click", () => profilePreviewModal.style.display = "none");
+    profilePreviewModal.addEventListener("click", (e) => { if (e.target === profilePreviewModal) profilePreviewModal.style.display = "none"; });
+
+    btnDeletePhoto.addEventListener("click", () => {
+      customConfirm("Tem certeza que deseja remover sua foto de perfil?", "Remover Foto").then((confirmed) => {
+        if (confirmed && currentUser) {
+          toggleLoading(true);
+          updateDoc(doc(db, "users", currentUser.uid), { photoURL: "" })
+            .then(() => { toggleLoading(false); showToast("Foto removida!", "success"); profilePreviewModal.style.display = "none"; })
+            .catch((err) => { toggleLoading(false); console.error(err); showToast("Erro ao remover foto.", "error"); });
+        }
+      });
+    });
+
+    btnChangePhoto.addEventListener("click", () => {
+      profilePreviewModal.style.display = "none";
+      profileUpload.click();
+    });
+
     profileUpload.addEventListener("change", (e) => {
       if (e.target.files && e.target.files[0]) {
-        resizeImage(e.target.files[0], 500, 500, (base64) => {
-          if (currentUser) {
-            updateDoc(doc(db, "users", currentUser.uid), { photoURL: base64 })
-              .then(() => showToast("Foto de perfil atualizada!", "success"))
-              .catch((err) => console.error(err));
-          }
-        });
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          cropImg.src = evt.target.result;
+          cropModal.style.display = "flex";
+          cropState = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+          cropZoomRange.value = 1;
+          cropImg.onload = () => {
+            cropState.x = (300 - cropImg.naturalWidth) / 2;
+            cropState.y = (300 - cropImg.naturalHeight) / 2;
+            updateCropTransform();
+          };
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      }
+      profileUpload.value = "";
+    });
+
+    function updateCropTransform() { cropImg.style.transform = `translate(${cropState.x}px, ${cropState.y}px) scale(${cropState.scale})`; }
+
+    cropZoomRange.addEventListener("input", (e) => { cropState.scale = parseFloat(e.target.value); updateCropTransform(); });
+    cropArea.addEventListener("mousedown", (e) => { cropState.isDragging = true; cropState.startX = e.clientX - cropState.x; cropState.startY = e.clientY - cropState.y; cropArea.style.cursor = "grabbing"; });
+    window.addEventListener("mousemove", (e) => { if (cropState.isDragging) { e.preventDefault(); cropState.x = e.clientX - cropState.startX; cropState.y = e.clientY - cropState.startY; updateCropTransform(); } });
+    window.addEventListener("mouseup", () => { cropState.isDragging = false; cropArea.style.cursor = "grab"; });
+    btnCancelCrop.addEventListener("click", () => cropModal.style.display = "none");
+
+    btnSaveCrop.addEventListener("click", () => {
+      toggleLoading(true);
+      const canvas = document.createElement("canvas");
+      canvas.width = 300; canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(cropImg, cropState.x, cropState.y, cropImg.naturalWidth * cropState.scale, cropImg.naturalHeight * cropState.scale);
+      const base64 = canvas.toDataURL("image/jpeg", 0.8);
+      if (currentUser) {
+        updateDoc(doc(db, "users", currentUser.uid), { photoURL: base64 })
+          .then(() => { toggleLoading(false); showToast("Foto atualizada!", "success"); cropModal.style.display = "none"; })
+          .catch((err) => { toggleLoading(false); console.error(err); showToast("Erro ao salvar foto.", "error"); });
       }
     });
   }
@@ -2349,7 +2438,17 @@ document.addEventListener("DOMContentLoaded", () => {
     googleLoginBtn.addEventListener("click", () => {
       toggleLoading(true);
       const provider = new GoogleAuthProvider();
-      signInWithRedirect(auth, provider);
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          toggleLoading(false);
+          showToast("Login realizado com sucesso!", "success");
+          if (loginModal) closeModalWithFade(loginModal);
+        })
+        .catch((error) => {
+          toggleLoading(false);
+          console.error("Erro no login Google:", error);
+          showToast("Erro ao fazer login com Google.", "error");
+        });
     });
   }
 
@@ -2749,6 +2848,40 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
       });
+    });
+  }
+
+  // --- Cookie Banner Logic ---
+  const cookieBannerHTML = `
+    <div id="cookie-banner" class="cookie-banner" style="display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: #fff; padding: 15px; text-align: center; z-index: 10000; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); font-family: sans-serif;">
+      <p style="margin: 0 0 10px 0; font-size: 14px; display: inline-block; margin-right: 10px;">
+        Utilizamos cookies para melhorar sua experiência. Ao continuar, você concorda com nossa 
+        <a href="#" id="cookie-privacy-link" style="color: #4CAF50; text-decoration: underline;">Política de Privacidade</a>.
+      </p>
+      <button id="accept-cookies-btn" style="background: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Aceitar</button>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', cookieBannerHTML);
+
+  const cookieBanner = document.getElementById("cookie-banner");
+  const acceptCookiesBtn = document.getElementById("accept-cookies-btn");
+  const cookiePrivacyLink = document.getElementById("cookie-privacy-link");
+
+  if (!localStorage.getItem("softsafe_cookie_consent")) {
+    if (cookieBanner) cookieBanner.style.display = "block";
+  }
+
+  if (acceptCookiesBtn) {
+    acceptCookiesBtn.addEventListener("click", () => {
+      localStorage.setItem("softsafe_cookie_consent", "true");
+      if (cookieBanner) cookieBanner.style.display = "none";
+    });
+  }
+
+  if (cookiePrivacyLink && privacyModal) {
+    cookiePrivacyLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      privacyModal.style.display = "block";
     });
   }
 });
