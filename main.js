@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getFirestore, collection, doc, getDoc, setDoc, updateDoc, increment, onSnapshot, addDoc, query, orderBy, getDocs, where, runTransaction, deleteDoc, collectionGroup, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, updatePassword, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage, ref, uploadString, getDownloadURL, uploadBytesResumable, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
@@ -99,6 +99,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupStrengthBar = document.getElementById("signup-strength-bar");
   const signupStrengthText = document.getElementById("signup-strength-text");
   const forgotPasswordLink = document.getElementById("forgot-password-link");
+
+  // State for Filters and Cart
+  let currentFilter = 'all';
+  let cart = JSON.parse(localStorage.getItem('softsafe_cart')) || [];
 
   // Auth Elements
   const tabLogin = document.getElementById("tab-login");
@@ -239,6 +243,88 @@ document.addEventListener("DOMContentLoaded", () => {
   // Garantir que o spinner seja removido quando a página carregar completamente
   window.addEventListener('load', () => toggleLoading(false));
   setTimeout(() => toggleLoading(false), 8000); // Timeout de segurança
+
+  // --- Filters UI Injection ---
+  if (productList) {
+    const filterHTML = `
+      <div class="filter-container">
+        <button class="filter-btn active" data-filter="all">Todos</button>
+        <button class="filter-btn" data-filter="free">Gratuitos</button>
+        <button class="filter-btn" data-filter="paid">Pagos</button>
+      </div>
+    `;
+    productList.insertAdjacentHTML('beforebegin', filterHTML);
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentFilter = e.target.getAttribute('data-filter');
+        applyFilters();
+      });
+    });
+  }
+
+  // --- Cart UI Injection ---
+  const cartHTML = `
+    <div id="cart-float-btn" class="cart-float-btn" title="Carrinho">
+      <i class="fas fa-shopping-cart"></i>
+      <span id="cart-count" class="cart-count">0</span>
+    </div>
+
+    <div id="cart-modal" class="modal">
+      <div class="modal-content">
+        <span class="close close-cart">&times;</span>
+        <h2>Carrinho de Compras</h2>
+        <div id="cart-items" class="cart-modal-items">
+          <p>Seu carrinho está vazio.</p>
+        </div>
+        <div id="cart-total" class="cart-total">Total: 0 MZN</div>
+        <div class="modal-actions">
+          <button id="checkout-btn" class="download-btn">Finalizar Compra</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', cartHTML);
+
+  const cartFloatBtn = document.getElementById("cart-float-btn");
+  const cartModal = document.getElementById("cart-modal");
+  const closeCartBtn = document.querySelector(".close-cart");
+  const cartItemsContainer = document.getElementById("cart-items");
+  const cartTotalElem = document.getElementById("cart-total");
+  const checkoutBtn = document.getElementById("checkout-btn");
+  const cartCountElem = document.getElementById("cart-count");
+
+  if (cartFloatBtn) {
+    cartFloatBtn.addEventListener("click", () => {
+      renderCart();
+      cartModal.style.display = "block";
+    });
+  }
+
+  if (closeCartBtn) {
+    closeCartBtn.addEventListener("click", () => closeModalWithFade(cartModal));
+  }
+
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener("click", () => {
+      if (cart.length === 0) return showToast("Carrinho vazio.", "error");
+
+      // Simulação de Checkout via WhatsApp
+      let message = "Olá, gostaria de comprar os seguintes itens:\n\n";
+      let total = 0;
+      cart.forEach(item => {
+        message += `- ${item.name} (${item.price} MZN)\n`;
+        total += parseFloat(item.price.replace(',', '.'));
+      });
+      message += `\nTotal: ${total} MZN`;
+
+      const whatsappUrl = `https://wa.me/258842539668?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+      closeModalWithFade(cartModal);
+    });
+  }
 
   // --- Contact Modal Logic ---
   // Intercept links to #contato
@@ -1013,6 +1099,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // --- Filter Logic ---
+  function applyFilters() {
+    const query = searchBar ? searchBar.value.toLowerCase() : "";
+
+    const filtered = allProducts.filter(product => {
+      const name = getLocalized(product, 'name').toLowerCase();
+      const desc = getLocalized(product, 'description') ? getLocalized(product, 'description').toLowerCase() : "";
+      const matchesSearch = name.includes(query) || desc.includes(query);
+
+      const price = product.price || "00";
+      const isPaid = price !== "00";
+
+      let matchesFilter = true;
+      if (currentFilter === 'free') matchesFilter = !isPaid;
+      if (currentFilter === 'paid') matchesFilter = isPaid;
+
+      return matchesSearch && matchesFilter;
+    });
+
+    renderProducts(filtered);
+  }
+
   function renderBatch() {
     if (!productList) return;
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -1033,6 +1141,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const isPaid = price !== "00";
       const priceHtml = `<p class="product-price ${isPaid ? 'paid' : 'free'}">${isPaid ? 'Preço: ' + price + ' MZN' : 'Grátis'}</p>`;
 
+      let actionButtons = `<button class="view-more-btn" data-id="${product.id}">Ver Mais</button>`;
+      if (isPaid) {
+        actionButtons += `<button class="add-cart-btn" onclick="addToCart(${product.id})"><i class="fas fa-cart-plus"></i></button>`;
+      }
+
       const productCard = `
           <div class="produto fade-in" style="animation-delay: ${index * 0.1}s">
             ${isNew ? '<span class="new-badge">Novo</span>' : ''}
@@ -1045,7 +1158,7 @@ document.addEventListener("DOMContentLoaded", () => {
                👁️ <span class="view-count">0</span> visualizações
             </div>
             ${priceHtml}
-            <button class="view-more-btn" data-id="${product.id}">Ver Mais</button>
+            ${actionButtons}
           </div>
         `;
       productsHTML += productCard;
@@ -1076,6 +1189,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
     renderPaginationControls();
     updateCounter();
+  }
+
+  // --- Cart Logic Functions ---
+  window.addToCart = function (productId) {
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    if (!cart.find(p => p.id === productId)) {
+      cart.push({
+        id: product.id,
+        name: getLocalized(product, 'name'),
+        price: product.price
+      });
+      saveCart();
+      showToast("Adicionado ao carrinho!", "success");
+    } else {
+      showToast("Item já está no carrinho.", "info");
+    }
+  };
+
+  window.removeFromCart = function (productId) {
+    cart = cart.filter(p => p.id !== productId);
+    saveCart();
+    renderCart();
+  };
+
+  function saveCart() {
+    localStorage.setItem('softsafe_cart', JSON.stringify(cart));
+    updateCartCount();
+  }
+
+  function updateCartCount() {
+    if (cartCountElem) cartCountElem.textContent = cart.length;
+    if (cartFloatBtn) cartFloatBtn.style.display = cart.length > 0 ? "flex" : "none";
+  }
+
+  function renderCart() {
+    if (cart.length === 0) {
+      cartItemsContainer.innerHTML = "<p>Seu carrinho está vazio.</p>";
+      cartTotalElem.textContent = "Total: 0 MZN";
+      return;
+    }
+
+    let html = "";
+    let total = 0;
+    cart.forEach(item => {
+      html += `
+        <div class="cart-item">
+          <div><span class="cart-item-title">${item.name}</span> <br> <span class="cart-item-price">${item.price} MZN</span></div>
+          <button class="cart-remove-btn" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
+        </div>
+      `;
+      total += parseFloat(item.price.replace(',', '.')); // Assume price format "100" or "100,00"
+    });
+    cartItemsContainer.innerHTML = html;
+    cartTotalElem.textContent = `Total: ${total} MZN`;
   }
 
   function renderPaginationControls() {
@@ -1148,6 +1317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         allProducts = data;
         renderProducts(allProducts);
+        updateCartCount(); // Initialize cart button visibility
       });
   }
 
@@ -1920,13 +2090,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Search functionality
   function performSearch() {
-    const query = searchBar.value.toLowerCase();
-    const filteredProducts = allProducts.filter(product => {
-      const name = getLocalized(product, 'name').toLowerCase();
-      const desc = getLocalized(product, 'description') ? getLocalized(product, 'description').toLowerCase() : "";
-      return name.includes(query) || desc.includes(query);
-    });
-    renderProducts(filteredProducts);
+    // Now delegates to applyFilters to combine search + category
+    applyFilters();
 
     // Suggestions Logic
     if (suggestionsContainer) {
@@ -2825,18 +2990,44 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Reset Password Logic (Profile Page) ---
   if (resetPasswordBtn) {
     resetPasswordBtn.addEventListener("click", () => {
-      if (currentUser && currentUser.email) {
-        customConfirm(`Enviar e-mail de redefinição para ${currentUser.email}?`, "Redefinir Senha").then((confirmed) => {
-          if (confirmed) {
-            toggleLoading(true);
-            sendPasswordResetEmail(auth, currentUser.email)
-              .then(() => { toggleLoading(false); showToast("E-mail enviado!", "success"); })
-              .catch((err) => { toggleLoading(false); showToast("Erro: " + err.message, "error"); });
-          }
-        });
-      } else {
-        showToast("E-mail não disponível.", "error");
+      // "OTP" System Implementation:
+      // Since Firebase does not support sending a numeric OTP via email for password changes without a backend,
+      // we implement the Secure Re-authentication Flow. This requires the user to prove their identity
+      // (confirm current password) before setting a new one. This is the standard security practice.
+
+      if (!currentUser) return;
+
+      // Check if user is logged in with password provider
+      const isPasswordAuth = currentUser.providerData.some(p => p.providerId === 'password');
+
+      if (!isPasswordAuth) {
+        showToast("Faça login com e-mail/senha para alterar a senha.", "info");
+        return;
       }
+
+      customPrompt("Para sua segurança, confirme sua senha atual:", "Verificação de Segurança", true).then((currentPass) => {
+        if (!currentPass) return;
+
+        toggleLoading(true);
+        const credential = EmailAuthProvider.credential(currentUser.email, currentPass);
+
+        reauthenticateWithCredential(currentUser, credential).then(() => {
+          toggleLoading(false);
+          // Re-auth successful, now ask for new password
+          customPrompt("Digite a nova senha:", "Nova Senha", true).then((newPass) => {
+            if (newPass && newPass.length >= 6) {
+              toggleLoading(true);
+              updatePassword(currentUser, newPass).then(() => {
+                toggleLoading(false);
+                showToast("Senha alterada com sucesso!", "success");
+              }).catch(err => { toggleLoading(false); showToast("Erro ao alterar: " + err.message, "error"); });
+            } else if (newPass) { showToast("A senha deve ter no mínimo 6 caracteres.", "error"); }
+          });
+        }).catch((error) => {
+          toggleLoading(false);
+          showToast("Senha atual incorreta.", "error");
+        });
+      });
     });
   }
 
