@@ -467,7 +467,7 @@ body.menu-open .back-to-top {
 .modal {
   display: none;
   position: fixed;
-  z-index: 1;
+  z-index: 1500;
   left: 0;
   top: 0;
   width: 100%;
@@ -981,7 +981,7 @@ body.dark-mode .suggestion-item {
   background-color: white;
   border: 1px solid #ddd;
   border-radius: 0 0 15px 15px;
-  z-index: 100;
+  z-index: 800;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -1357,13 +1357,6 @@ body.dark-mode .like-btn {
 body.dark-mode .like-btn.liked {
   color: #e74c3c;
   border-color: #e74c3c;
-}
-
-/* Comments Section */
-.comments-section {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #ddd;
 }
 
 .comment-form {
@@ -2519,4 +2512,182 @@ body.dark-mode .auth-separator span {
   height: 50px;
   animation: spin 1s linear infinite;
   margin-bottom: 15px;
+}
+
+/* Profile Page Styles - Cleaned Up */
+.profile-name-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#profile-name {
+  margin: 0;
+}
+
+#profile-upload {
+  display: none;
+}
+
+#reset-password-btn {
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  margin-top: 5px;
+  background-color: #f39c12;
+}
+
+#reset-password-btn:hover {
+  background-color: #e67e22;
+}
+
+#delete-account-btn {
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  margin-top: 5px;
+  background-color: #e74c3c;
+}
+
+#delete-account-btn:hover {
+  background-color: #c0392b;
+}
+
+/* Zoom Error Message */
+#zoom-error {
+  display: none;
+  color: #ff6b6b;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 2001;
+}
+
+#zoom-error i {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+/* --- JS Injected Styles Moved to CSS --- */
+
+/* Translation Indicator */
+#translation-indicator {
+  display: none;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(31, 76, 255, 0.9);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  z-index: 9999;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+#translation-indicator .spinner-icon {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+/* Product Card */
+.product-price {
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.product-price.paid {
+  color: #e74c3c;
+}
+
+.product-price.free {
+  color: #2ecc71;
+}
+
+.product-rating-list {
+  margin: 5px 0;
+  color: #f1c40f;
+  font-size: 1.2rem;
+}
+
+.rating-value {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* News Card */
+.news-date {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+
+.news-extra-image {
+  margin-top: 15px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.news-extra-text {
+  margin-top: 10px;
+}
+
+.news-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* News Modal */
+.news-modal-body-text {
+  margin-bottom: 15px;
+}
+
+.comments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.comments-header h3 {
+  margin: 0;
+}
+
+.comment-form-submit {
+  width: fit-content;
+}
+
+/* Comments */
+.comment-date {
+  font-weight: normal;
+  color: #888;
+}
+
+.reply-submit-btn {
+  width: fit-content;
+  font-size: 0.8rem;
+  padding: 8px 15px;
+}
+
+.comments-unavailable {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.no-results-msg {
+  width: 100%;
+  text-align: center;
+  padding: 20px;
+}
+
+.empty-notifications {
+  padding: 10px;
+  text-align: center;
+  color: #888;
 }

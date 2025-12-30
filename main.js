@@ -107,6 +107,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const manualSignupBtn = document.getElementById("manual-signup-btn");
   const signupPhoto = document.getElementById("signup-photo");
 
+  // Configurar ação padrão do botão de login (fallback antes do Auth carregar)
+  if (loginBtn) {
+    loginBtn.onclick = () => {
+      if (loginModal) loginModal.style.display = "block";
+    };
+  }
+
   // Inicializar currentLang no topo para evitar ReferenceError
   let currentLang = localStorage.getItem("softsafe_lang") || "pt";
 
@@ -180,8 +187,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Translation Indicator ---
   const transIndicatorHTML = `
-    <div id="translation-indicator" style="display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(31, 76, 255, 0.9); color:white; padding:10px 20px; border-radius:25px; z-index:9999; font-weight:600; box-shadow:0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(5px);">
-      <span style="display:inline-block; animation:spin 1s linear infinite; margin-right:8px;">⟳</span> <span id="trans-text">Traduzindo conteúdo...</span>
+    <div id="translation-indicator">
+      <span class="spinner-icon">⟳</span> <span id="trans-text">Traduzindo conteúdo...</span>
     </div>
   `;
   document.body.insertAdjacentHTML('beforeend', transIndicatorHTML);
@@ -818,15 +825,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const name = getLocalized(product, 'name');
       const price = product.price || "00";
       const isPaid = price !== "00";
-      const priceHtml = `<p style="font-weight:bold; margin-top:5px; color:${isPaid ? '#e74c3c' : '#2ecc71'}">${isPaid ? 'Preço: ' + price + ' MZN' : 'Grátis'}</p>`;
+      const priceHtml = `<p class="product-price ${isPaid ? 'paid' : 'free'}">${isPaid ? 'Preço: ' + price + ' MZN' : 'Grátis'}</p>`;
 
       const productCard = `
           <div class="produto fade-in" style="animation-delay: ${index * 0.1}s">
             ${isNew ? '<span class="new-badge">Novo</span>' : ''}
             <img src="${product.image}" alt="${product.name}">
             <h4>${name}</h4>
-            <div class="product-rating-list" id="product-rating-${product.id}" style="margin: 5px 0; color: #f1c40f; font-size: 1.2rem;">
-               <span class="stars-display">☆☆☆☆☆</span> <span class="rating-value" style="font-size: 0.9rem; color: #666;">(0.0)</span>
+            <div class="product-rating-list" id="product-rating-${product.id}">
+               <span class="stars-display">☆☆☆☆☆</span> <span class="rating-value">(0.0)</span>
             </div>
             <div class="product-views" id="product-views-${product.id}">
                👁️ <span class="view-count">0</span> visualizações
@@ -906,7 +913,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentPage = 1;
 
     if (products.length === 0) {
-      productList.innerHTML = '<p class="no-results" style="width: 100%; text-align: center; padding: 20px;">Nenhum produto encontrado.</p>';
+      productList.innerHTML = '<p class="no-results-msg">Nenhum produto encontrado.</p>';
       if (paginationContainer) paginationContainer.innerHTML = "";
       productCountElem.textContent = "";
       return;
@@ -953,18 +960,45 @@ document.addEventListener("DOMContentLoaded", () => {
     loadMoreNewsBtn.className = "load-more-btn";
     newsList.parentNode.insertBefore(loadMoreNewsBtn, newsList.nextSibling);
 
+    // Adicionar spinner enquanto carrega
+    newsList.innerHTML = '<div class="main-spinner"></div>';
+
     loadMoreNewsBtn.addEventListener("click", () => {
       currentNewsPage++;
       renderNewsBatch();
     });
 
-    fetch(`news.json?t=${new Date().getTime()}`)
-      .then(res => res.json())
-      .then(data => {
-        allNews = data;
-        filteredNews = data;
+    const fetchNews = () => {
+      fetch(`news.json?t=${new Date().getTime()}`)
+        .then(res => res.json())
+        .then(data => {
+          allNews = data;
+          filteredNews = data;
+          renderNewsBatch();
+          localStorage.setItem("softsafe_news_cache", JSON.stringify(data));
+          localStorage.setItem("softsafe_news_ts", Date.now());
+        })
+        .catch(err => {
+          console.error(err);
+          newsList.innerHTML = '<p class="no-results-msg">Erro ao carregar notícias.</p>';
+        });
+    };
+
+    const cachedNews = localStorage.getItem("softsafe_news_cache");
+    const cachedTs = localStorage.getItem("softsafe_news_ts");
+    const CACHE_DURATION = 3600000; // 1 hora
+
+    if (cachedNews && cachedTs && (Date.now() - cachedTs < CACHE_DURATION)) {
+      try {
+        allNews = JSON.parse(cachedNews);
+        filteredNews = allNews;
         renderNewsBatch();
-      });
+      } catch (e) {
+        fetchNews();
+      }
+    } else {
+      fetchNews();
+    }
 
     // News Search Logic
     if (newsSearchInput) {
@@ -1010,8 +1044,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const extraText = getLocalized(item, 'extra_text');
       let extraContentHTML = "";
-      if (item.extra_image) extraContentHTML += `<img src="${item.extra_image}" alt="Extra" style="margin-top:15px; width:100%; border-radius:8px;">`;
-      if (extraText) extraContentHTML += `<p style="margin-top:10px;">${extraText}</p>`;
+      if (item.extra_image) extraContentHTML += `<img src="${item.extra_image}" alt="Extra" class="news-extra-image">`;
+      if (extraText) extraContentHTML += `<p class="news-extra-text">${extraText}</p>`;
 
       let expandBtn = "";
       if (isLong) {
@@ -1020,7 +1054,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       card.innerHTML = `
         <h3>${title}</h3>
-        ${item.date ? `<p style="color: #888; font-size: 0.9rem; margin-bottom: 15px;">📅 ${item.date}</p>` : ''}
+        ${item.date ? `<p class="news-date">📅 ${item.date}</p>` : ''}
         <img src="${item.image}" alt="${item.title}">
         
         <div id="news-content-${item.id}">
@@ -1032,7 +1066,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         ${expandBtn}
         
-        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap: wrap;">
+        <div class="news-actions">
           <button class="like-btn" onclick="toggleNewsLike(${item.id})" id="news-like-btn-${item.id}">
             ❤️ <span id="news-like-count-${item.id}">0</span>
           </button>
@@ -1094,6 +1128,9 @@ document.addEventListener("DOMContentLoaded", () => {
         img.src = media.src;
         img.alt = "News Image";
         img.style.display = "block";
+        if (index > 0) {
+          img.loading = "lazy"; // Otimização de carregamento
+        }
         img.onclick = () => openZoom(media.src);
         item.appendChild(img);
       }
@@ -1251,9 +1288,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const text = getLocalized(item, 'text');
     const extraText = getLocalized(item, 'extra_text');
-    let bodyContent = `<p style="margin-bottom: 15px;">${text}</p>`;
-    if (extraText) bodyContent += `<p style="margin-bottom: 15px;">${extraText}</p>`;
-    if (currentNewsMedia.length <= 1 && item.extra_image && !item.image) bodyContent += `<img src="${item.extra_image}" style="width:100%; border-radius:8px; margin-top:10px;">`;
+    let bodyContent = `<p class="news-modal-body-text">${text}</p>`;
+    if (extraText) bodyContent += `<p class="news-modal-body-text">${extraText}</p>`;
+    if (currentNewsMedia.length <= 1 && item.extra_image && !item.image) bodyContent += `<img src="${item.extra_image}" class="news-extra-image">`;
 
     document.getElementById("news-modal-body").innerHTML = bodyContent;
 
@@ -1264,8 +1301,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const commentsContainer = document.getElementById("news-modal-comments-container");
     if (commentsContainer) {
       commentsContainer.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h3 style="margin:0;">Comentários</h3>
+        <div class="comments-header">
+          <h3>Comentários</h3>
           <select class="sort-comments-select" onchange="sortComments(${id}, this.value)">
             <option value="newest">Mais Recentes</option>
             <option value="oldest">Mais Antigos</option>
@@ -1277,7 +1314,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <input type="text" id="modal-comment-name-${id}" placeholder="Seu nome" required>
           <textarea id="modal-comment-text-${id}" placeholder="Seu comentário" required></textarea>
           <input type="file" id="modal-comment-file-${id}" accept="image/*">
-          <button type="submit" class="download-btn" style="width: fit-content;">Comentar</button>
+          <button type="submit" class="download-btn comment-form-submit">Comentar</button>
         </form>
       `;
 
@@ -1472,7 +1509,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (notificationList) {
         notificationList.innerHTML = "";
         if (notifications.length === 0) {
-          notificationList.innerHTML = '<div style="padding:10px; text-align:center; color:#888;">Nenhuma notificação.</div>';
+          notificationList.innerHTML = '<div class="empty-notifications">Nenhuma notificação.</div>';
         } else {
           notifications.forEach(notif => {
             const div = document.createElement("div");
@@ -1576,7 +1613,7 @@ document.addEventListener("DOMContentLoaded", () => {
         div.innerHTML = `
         <div class="comment-avatar">👤</div>
         <div class="comment-content">
-          <h5>${c.name} <small style="font-weight:normal; color:#888;">${c.date}</small></h5>
+          <h5>${c.name} <small class="comment-date">${c.date}</small></h5>
           <p>${c.text}</p>
           ${c.image ? `<img src="${c.image}" class="comment-img" style="cursor:zoom-in">` : ''}
           <div class="comment-actions">
@@ -1590,7 +1627,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <form class="comment-form" onsubmit="submitReply(event, ${newsId}, '${c.id}')">
               <input type="text" placeholder="Seu nome" required>
               <textarea placeholder="Sua resposta" required></textarea>
-              <button type="submit" class="download-btn" style="width: fit-content; font-size: 0.8rem; padding: 8px 15px;">Enviar</button>
+              <button type="submit" class="download-btn reply-submit-btn">Enviar</button>
             </form>
           </div>
 
@@ -1624,7 +1661,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }, (error) => {
       console.warn("Erro ao carregar comentários:", error.code);
-      container.innerHTML = `<p style="color: #888; font-size: 0.9rem;">Comentários indisponíveis (Verifique as regras do Firebase).</p>`;
+      container.innerHTML = `<p class="comments-unavailable">Comentários indisponíveis (Verifique as regras do Firebase).</p>`;
     });
   }
 

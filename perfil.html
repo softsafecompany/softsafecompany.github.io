@@ -34,42 +34,27 @@
           />
           <div class="profile-overlay"><i class="fas fa-camera"></i></div>
         </div>
+        <label for="profile-upload" class="sr-only"
+          >Upload de Imagem de Perfil</label
+        >
         <input
           type="file"
           id="profile-upload"
           accept="image/*"
-          style="display: none"
+          title="Upload de Imagem de Perfil"
         />
         <div>
-          <div style="display: flex; align-items: center; gap: 10px">
-            <h2 id="profile-name" style="margin: 0">Carregando...</h2>
+          <div class="profile-name-group">
+            <h2 id="profile-name">Carregando...</h2>
             <button id="edit-name-btn" class="edit-btn" title="Editar nome">
               <i class="fas fa-pen"></i>
             </button>
           </div>
           <p id="profile-email">...</p>
-          <button
-            id="reset-password-btn"
-            class="download-btn"
-            style="
-              font-size: 0.8rem;
-              padding: 5px 10px;
-              margin-top: 5px;
-              background-color: #f39c12;
-            "
-          >
+          <button id="reset-password-btn" class="download-btn">
             Redefinir Senha
           </button>
-          <button
-            id="delete-account-btn"
-            class="download-btn"
-            style="
-              font-size: 0.8rem;
-              padding: 5px 10px;
-              margin-top: 5px;
-              background-color: #e74c3c;
-            "
-          >
+          <button id="delete-account-btn" class="download-btn">
             Excluir Conta
           </button>
         </div>
