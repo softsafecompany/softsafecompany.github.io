@@ -4,6 +4,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, updatePassword, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage, ref, uploadString, getDownloadURL, uploadBytesResumable, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 
@@ -24,6 +25,7 @@ const db = getFirestore(app);
 console.log("firebase inicializado");
 const auth = getAuth(app);
 const storage = getStorage(app);
+const functions = getFunctions(app);
 
 setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error("Erro ao definir persistência:", error);
@@ -2457,9 +2459,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("modal-description").innerHTML = getLocalized(product, 'description').replace(/\n/g, '<br>');
 
     // Incrementar contador de cliques (views) do produto no Firestore
-    updateDoc(doc(db, "products", String(product.id)), { clicks: increment(1) }).catch(() => {
-      setDoc(doc(db, "products", String(product.id)), { clicks: 1 }, { merge: true });
-    });
+    const registerView = httpsCallable(functions, 'registerView');
+    registerView({ productId: product.id }).catch(console.error);
 
     // Reset Stars
     stars.forEach(s => s.classList.remove('filled'));
@@ -2573,49 +2574,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (!currentOpenProductId) return;
 
-        const productRef = doc(db, "products", String(currentOpenProductId));
-        const userRatingRef = doc(db, "products", String(currentOpenProductId), "ratings", currentUser.uid);
+        const submitRating = httpsCallable(functions, 'submitRating');
 
-        runTransaction(db, async (transaction) => {
-          const productDoc = await transaction.get(productRef);
-          const userRatingDoc = await transaction.get(userRatingRef);
-
-          let newRatingCount = 0;
-          let newAverageRating = 0;
-
-          if (!productDoc.exists()) {
-            newRatingCount = 1;
-            newAverageRating = rating;
-            transaction.set(productRef, { averageRating: rating, ratingCount: 1, clicks: 1 });
-          } else {
-            const data = productDoc.data();
-            const currentAvg = data.averageRating || 0;
-            const currentCount = data.ratingCount || 0;
-
-            // Verificação para impedir múltiplas avaliações (mesmo que as regras permitam update)
-            if (userRatingDoc.exists()) {
-              throw "Você já avaliou este produto.";
-            }
-
-            if (userRatingDoc.exists()) {
-              const oldRating = userRatingDoc.data().rating;
-              newRatingCount = currentCount;
-              newAverageRating = ((currentAvg * currentCount) - oldRating + rating) / currentCount;
-            } else {
-              newRatingCount = currentCount + 1;
-              newAverageRating = ((currentAvg * currentCount) + rating) / newRatingCount;
-            }
-
-            transaction.update(productRef, {
-              averageRating: newAverageRating,
-              ratingCount: newRatingCount
-            });
-          }
-          transaction.set(userRatingRef, { rating: rating, timestamp: new Date() });
-        }).then(() => {
-          console.log("Avaliação salva!");
-          customAlert("Obrigado pela sua avaliação!", "Sucesso");
-        }).catch(err => customAlert(String(err), "Erro"));
+        submitRating({ productId: currentOpenProductId, rating: rating })
+          .then(() => {
+            console.log("Avaliação salva!");
+            customAlert("Obrigado pela sua avaliação!", "Sucesso");
+          })
+          .catch(err => {
+            console.error(err);
+            customAlert("Erro ao salvar avaliação: " + err.message, "Erro");
+          });
       });
     });
   }
