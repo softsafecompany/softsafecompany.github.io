@@ -34,6 +34,10 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
 let currentUser = null;
 let unsubscribeComments = null; // To manage real-time listener
 let unsubscribeNotifications = null; // For reply notifications
+let unsubscribeProduct = null; // Listener do produto aberto
+let unsubscribeProductComments = null; // Listener de comentários do produto
+let userRatingSelection = 0; // Nota selecionada pelo usuário
+let isUserRating = false; // Se o usuário está interagindo com as estrelas
 
 document.addEventListener("DOMContentLoaded", () => {
   const productList = document.getElementById("product-list");
@@ -2458,6 +2462,13 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("modal-compatibility").textContent = product.compatibility;
     document.getElementById("modal-description").innerHTML = getLocalized(product, 'description').replace(/\n/g, '<br>');
 
+    // Reset Rating Form
+    userRatingSelection = 0;
+    isUserRating = false;
+    document.getElementById('rating-comment').value = '';
+    if (unsubscribeProduct) unsubscribeProduct(); // Limpar listener anterior
+    if (unsubscribeProductComments) unsubscribeProductComments(); // Limpar listener de comentários
+
     // Incrementar contador de cliques (views) do produto no Firestore
     const registerView = httpsCallable(functions, 'registerView');
     registerView({ productId: product.id }).catch(console.error);
@@ -2467,15 +2478,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ratingCountElem) ratingCountElem.textContent = "(Carregando...)";
 
     // Listen for Rating Updates
-    onSnapshot(doc(db, "products", String(product.id)), (docSnap) => {
+    unsubscribeProduct = onSnapshot(doc(db, "products", String(product.id)), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const avg = data.averageRating || 0;
         const count = data.ratingCount || 0;
 
-        stars.forEach(s => {
-          s.classList.toggle('filled', parseInt(s.dataset.value) <= Math.round(avg));
-        });
+        if (!isUserRating) {
+          stars.forEach(s => {
+            s.classList.toggle('filled', parseInt(s.dataset.value) <= Math.round(avg));
+          });
+        }
         if (ratingCountElem) ratingCountElem.textContent = `(${avg.toFixed(1)} / ${count} avaliações)`;
       } else {
         if (ratingCountElem) ratingCountElem.textContent = "(0 avaliações)";
@@ -2484,6 +2497,45 @@ document.addEventListener("DOMContentLoaded", () => {
       console.warn("Erro ao carregar avaliações:", error.code);
       if (ratingCountElem) ratingCountElem.textContent = "(Offline)";
     });
+
+    // Load Product Comments
+    const commentsList = document.getElementById("product-comments-list");
+    if (commentsList) {
+      commentsList.innerHTML = '<p>Carregando avaliações...</p>';
+
+      const ratingsQuery = query(
+        collection(db, "products", String(product.id), "ratings"),
+        orderBy("timestamp", "desc")
+      );
+
+      unsubscribeProductComments = onSnapshot(ratingsQuery, (snapshot) => {
+        commentsList.innerHTML = "";
+        if (snapshot.empty) {
+          commentsList.innerHTML = '<p style="color:#666; font-style:italic; font-size: 0.9rem;">Seja o primeiro a avaliar!</p>';
+          return;
+        }
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const stars = "★★★★★☆☆☆☆☆".slice(5 - (data.rating || 0), 10 - (data.rating || 0));
+
+          const div = document.createElement("div");
+          div.className = "comment";
+          div.innerHTML = `
+            <div class="comment-avatar">👤</div>
+            <div class="comment-content">
+              <h5>${data.userName || "Usuário"} <small class="comment-date">${data.timestamp ? data.timestamp.toDate().toLocaleDateString() : ""}</small></h5>
+              <div class="comment-rating">${stars}</div>
+              <p>${data.comment || ""}</p>
+            </div>
+          `;
+          commentsList.appendChild(div);
+        });
+      }, (error) => {
+        console.error("Erro ao carregar comentários do produto:", error);
+        commentsList.innerHTML = '<p>Erro ao carregar comentários.</p>';
+      });
+    }
 
     // Setup Carousel
     currentCarouselIndex = 0;
@@ -2567,25 +2619,84 @@ document.addEventListener("DOMContentLoaded", () => {
   if (stars) {
     stars.forEach(star => {
       star.addEventListener('click', () => {
-        const rating = parseInt(star.dataset.value);
         if (!currentUser) {
           customAlert("Aguarde a autenticação para avaliar.", "Aviso");
           return;
         }
-        if (!currentOpenProductId) return;
 
-        const submitRating = httpsCallable(functions, 'submitRating');
+        // Apenas atualiza visualmente e salva o estado
+        userRatingSelection = parseInt(star.dataset.value);
+        isUserRating = true;
 
-        submitRating({ productId: currentOpenProductId, rating: rating })
-          .then(() => {
-            console.log("Avaliação salva!");
-            customAlert("Obrigado pela sua avaliação!", "Sucesso");
-          })
-          .catch(err => {
-            console.error(err);
-            customAlert("Erro ao salvar avaliação: " + err.message, "Erro");
-          });
+        stars.forEach(s => {
+          s.classList.toggle('filled', parseInt(s.dataset.value) <= userRatingSelection);
+        });
       });
+    });
+  }
+
+  // Handle Rating Submit Button
+  const submitRatingBtn = document.getElementById('submit-rating-btn');
+  if (submitRatingBtn) {
+    submitRatingBtn.addEventListener('click', () => {
+      if (!currentUser) return customAlert("Faça login para avaliar.", "Erro");
+      if (!currentOpenProductId) return;
+      if (userRatingSelection === 0) return customAlert("Por favor, selecione uma nota (estrelas).", "Aviso");
+
+      const comment = document.getElementById('rating-comment').value;
+      const productRef = doc(db, "products", String(currentOpenProductId));
+      const ratingRef = doc(db, "products", String(currentOpenProductId), "ratings", currentUser.uid);
+
+      toggleLoading(true);
+
+      runTransaction(db, async (transaction) => {
+        const ratingDoc = await transaction.get(ratingRef);
+        const productDoc = await transaction.get(productRef);
+
+        let currentRatingCount = 0;
+        let currentAverage = 0;
+
+        if (productDoc.exists()) {
+          const data = productDoc.data();
+          currentRatingCount = data.ratingCount || 0;
+          currentAverage = data.averageRating || 0;
+        }
+
+        let newSum = currentAverage * currentRatingCount;
+        let newCount = currentRatingCount;
+
+        if (ratingDoc.exists()) {
+          const oldRating = ratingDoc.data().rating;
+          newSum -= oldRating;
+        } else {
+          newCount++;
+        }
+
+        newSum += userRatingSelection;
+        const newAverage = newCount > 0 ? newSum / newCount : 0;
+
+        transaction.set(ratingRef, {
+          rating: userRatingSelection,
+          comment: comment,
+          userId: currentUser.uid,
+          userName: currentUser.displayName || "Usuário",
+          timestamp: new Date()
+        }, { merge: true });
+
+        transaction.set(productRef, { averageRating: newAverage, ratingCount: newCount }, { merge: true });
+      })
+        .then(() => {
+          toggleLoading(false);
+          console.log("Avaliação salva!");
+          customAlert("Obrigado pela sua avaliação!", "Sucesso");
+          isUserRating = false; // Retorna ao modo de visualização da média
+          document.getElementById('rating-comment').value = "";
+        })
+        .catch(err => {
+          toggleLoading(false);
+          console.error(err);
+          customAlert("Erro ao salvar avaliação: " + err.message, "Erro");
+        });
     });
   }
 
@@ -2649,6 +2760,7 @@ document.addEventListener("DOMContentLoaded", () => {
     footer.innerHTML = `
       <div class="footer-container">
         <p>&copy; ${currentYear} SoftSafe — Todos os direitos reservados</p>
+        <p>CEO (Francisco Armando Chico | Kas Cranky)</p>
         <div class="footer-socials">
           <a href="https://facebook.com" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
           <a href="https://instagram.com" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>

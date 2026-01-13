@@ -1428,6 +1428,13 @@ body.dark-mode .comment {
   font-weight: bold;
 }
 
+.comment-rating {
+  color: #f1c40f;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+  letter-spacing: 2px;
+}
+
 .comment-img {
   max-width: 150px;
   margin-top: 10px;
@@ -1899,6 +1906,30 @@ body.dark-mode .contact-form textarea {
 
 .star.filled {
   color: #f1c40f;
+}
+
+/* Rating Form */
+.rating-form {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rating-form textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+body.dark-mode .rating-form textarea {
+  background-color: #333;
+  color: #fff;
+  border-color: #555;
 }
 
 /* Toast Notification */

@@ -118,7 +118,7 @@
 
     <footer id="contato" class="footer">
       <p>
-        &copy; 2025 SoftSafe —
+        &copy; 2026 SoftSafe —
         <span data-lang="footer_rights">Todos os direitos reservados</span>
       </p>
     </footer>
@@ -147,6 +147,30 @@
             <span class="star" data-value="5">★</span>
           </div>
           <span id="rating-count">(0 avaliações)</span>
+        </div>
+        <div class="rating-form">
+          <textarea
+            id="rating-comment"
+            placeholder="Escreva um comentário sobre o produto (opcional)"
+          ></textarea>
+          <button
+            id="submit-rating-btn"
+            class="download-btn"
+            style="font-size: 0.9rem; padding: 8px 15px; margin-top: 5px"
+          >
+            Enviar
+          </button>
+        </div>
+        <div
+          id="product-comments-container"
+          style="
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+          "
+        >
+          <h3>Avaliações</h3>
+          <div id="product-comments-list" class="comment-list"></div>
         </div>
         <p><strong>Tamanho:</strong> <span id="modal-size"></span></p>
         <p><strong>Versão:</strong> <span id="modal-version"></span></p>
