@@ -400,6 +400,23 @@ body.menu-open .back-to-top {
   gap: 10px;
 }
 
+.footer-ceo {
+  font-weight: 500;
+  margin: 5px 0;
+  color: #bbb;
+}
+
+.ceo-link {
+  color: #1f4cff;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.ceo-link:hover {
+  color: #3a66ff;
+  text-decoration: underline;
+}
+
 .footer-socials {
   display: flex;
   gap: 20px;

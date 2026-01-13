@@ -382,6 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Lógica de Tema com Firebase ---
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
+    renderFooter();
     if (user) {
       // Carregar tema salvo
       const userRef = doc(db, "users", user.uid);
@@ -2754,33 +2755,42 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Dynamic Footer Content (Copyright + Socials + Privacy)
-  const footer = document.querySelector(".footer");
-  if (footer) {
-    const currentYear = new Date().getFullYear();
-    footer.innerHTML = `
-      <div class="footer-container">
-        <p>&copy; ${currentYear} SoftSafe — Todos os direitos reservados</p>
-        <p>CEO (Francisco Armando Chico | Kas Cranky)</p>
-        <div class="footer-socials">
-          <a href="https://facebook.com" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-          <a href="https://instagram.com" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
-          <a href="https://twitter.com" target="_blank" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
-        </div>
-        <div class="footer-legal">
-          <a href="#" id="privacy-link">Política de Privacidade</a>
-        </div>
-      </div>
-    `;
+  function renderFooter() {
+    const footer = document.querySelector(".footer");
+    if (footer) {
+      const currentYear = new Date().getFullYear();
+      const ceoName = "Francisco Armando Chico | Kas Cranky";
+      const ceoContent = (currentUser && !currentUser.isAnonymous)
+        ? `<a href="https://www.instagram.com/kascranky1" target="_blank" class="ceo-link">${ceoName}</a>`
+        : ceoName;
 
-    // Privacy Modal Logic
-    const privacyLink = document.getElementById("privacy-link");
-    if (privacyLink && privacyModal) {
-      privacyLink.addEventListener("click", (e) => {
-        e.preventDefault();
-        privacyModal.style.display = "block";
-      });
+      footer.innerHTML = `
+        <div class="footer-container">
+          <p>&copy; ${currentYear} SoftSafe — Todos os direitos reservados</p>
+          <p class="footer-ceo">CEO (${ceoContent})</p>
+          <div class="footer-socials">
+            <a href="https://facebook.com" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://instagram.com" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="https://twitter.com" target="_blank" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
+          </div>
+          <div class="footer-legal">
+            <a href="#" id="privacy-link">Política de Privacidade</a>
+          </div>
+        </div>
+      `;
+
+      // Privacy Modal Logic
+      const privacyLink = document.getElementById("privacy-link");
+      if (privacyLink && privacyModal) {
+        privacyLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          privacyModal.style.display = "block";
+        });
+      }
     }
   }
+
+  renderFooter();
 
   // Close Privacy Modal Logic
   document.querySelectorAll(".close-privacy, .close-privacy-btn").forEach(el => {
