@@ -54,5 +54,37 @@
         "src": "https://www.w3schools.com/html/mov_bbb.mp4"
       }
     ]
+  },
+  {
+    "id": 3,
+    "name": "SoftSafe Organizer",
+    "date": "2026-01-13",
+    "image": "assets/organizador.png",
+    "title": "Organizador de Arquivos",
+    "price": "00",
+    "size": "38 MB",
+    "version": "10.3.0",
+    "author": "SoftSafe Company",
+    "compatibility": "Windows 10/11",
+    "description": "OrganizadorArquivos V10.3.0.0 (Versão Estável)\nO OrganizadorArquivos é uma ferramenta utilitária leve e eficiente, projetada para quem lida com grandes volumes de dados e precisa de ordem instantânea. Desenvolvido com foco em performance e simplicidade, ele automatiza a triagem de ficheiros, eliminando a desordem digital com um único clique.\n\n🛠️ O que há de novo na V10.3.0\nNesta atualização, focamos na refinação do motor de triagem e na estabilidade do sistema:\n\nOtimização de Algoritmo: Processamento mais rápido para diretórios com mais de 1.000 itens.\n\nCorreção de Bugs: Melhoria na manipulação de permissões em pastas de sistema.\n\nInterface Refinada: Ajustes visuais para maior clareza durante o progresso da organização.\n\n🚀 Funcionalidades Principais\nClassificação Inteligente: Agrupa arquivos por extensão (Imagens, Documentos, Executáveis, Vídeos) de forma automática.\n\nLimpeza de Workspace: Ideal para designers e programadores que acumulam arquivos temporários na pasta \"Downloads\" ou \"Ambiente de Trabalho\".\n\nPortabilidade: Executável direto (.exe), sem necessidade de instalações complexas.\n\n📋 Como usar (Passo a Passo)\nExecução: Abra o OrganizadorArquivos V10.3.0.exe.\n\nSeleção: Indique a pasta que deseja organizar.\n\nProcessamento: Clique em \"Organizar\" e observe a mágica acontecer.\n\nConclusão: Seus arquivos estarão devidamente categorizados em subpastas específicas.\n\nNotas de Segurança e Integridade\nComo parte do meu compromisso com a transparência e ética no desenvolvimento, todos os binários são testados para garantir que não interferem com a integridade do seu sistema operacional.\n\nDesenvolvido por: yknarcsak\n\nLicença: Freeware / Ferramenta de Produtividade",
+    "download_link": "https://www.mediafire.com/file/onro5zj7u8m5ifj/OrganizadorArquivos_V1.3.0.0.exe/file",
+    "media": [
+      {
+        "type": "image",
+        "src": " assets/1.png"
+      },
+      {
+        "type": "image",
+        "src": " assets/2.png"
+      },
+      {
+        "type": "image",
+        "src": " assets/3.png"
+      },
+      {
+        "type": "video",
+        "src": "https://www.w3schools.com/html/mov_bbb.mp4"
+      }
+    ]
   }
 ]

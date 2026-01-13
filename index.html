@@ -186,57 +186,7 @@
     <!-- Share Modal -->
     <div id="share-modal" class="modal share-modal">
       <div class="modal-content share-content">
-        <span class="close-share"const functions = require('firebase-functions');
-        const admin = require('firebase-admin');
-        admin.initializeApp();
-        const nodemailer = require('nodemailer');
-        
-        // Configure seu serviço de e-mail (Gmail, SendGrid, etc.)
-        const transporter = nodemailer.createTransport({
-          service: 'Gmail', // ou outro serviço
-          auth: {
-            user: 'seu-email@gmail.com',
-            pass: 'sua-senha',
-          },
-        });
-        
-        // Função para gerar OTP numérico
-        function generateOTP() {
-          return Math.floor(100000 + Math.random() * 900000).toString();
-        }
-        
-        exports.sendOTP = functions.https.onCall(async (data, context) => {
-          const email = data.email;
-        
-          if (!email) {
-            throw new functions.https.HttpsError('invalid-argument', 'O e-mail é obrigatório.');
-          }
-        
-          const otp = generateOTP();
-          const mailOptions = {
-            from: 'seu-email@gmail.com',
-            to: email,
-            subject: 'Seu Código de Verificação',
-            text: `Seu código de verificação é: ${otp}`,
-          };
-        
-          try {
-            await transporter.sendMail(mailOptions);
-            console.log('E-mail enviado para:', email);
-        
-            // Salvar o OTP no Firestore para verificação futura
-            await admin.firestore().collection('otps').doc(email).set({
-              otp: otp,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-        
-            return { result: 'E-mail enviado com sucesso!' };
-          } catch (error) {
-            console.error('Erro ao enviar e-mail:', error);
-            throw new functions.https.HttpsError('internal', 'Erro ao enviar o e-mail.');
-          }
-        });
-        >&times;</span>
+        <span class="close-share">&times;</span>
         <h3>Compartilhar</h3>
         <div class="share-options">
           <a
@@ -415,29 +365,26 @@
         <span class="close-contact">&times;</span>
         <h2 data-lang="contact_title">Fale Conosco</h2>
         <form class="contact-form" id="contact-form">
-<!-- modify this form HTML and place wherever you want your form -->
-<form action="https://formspree.io/f/mykyvdvy" method="POST">
-  <label>
-    Your email:
-    <input type="email" name="email">
-  </label>
-  <label>
-    Your message:
-    <textarea name="message"></textarea>
-  </label>
-  <!-- your other form fields go here -->
-  <button type="submit">Send</button>
-</form>
-         <!--  <input
-             type="text"
-             id="contact-name"
-             placeholder="Seu Nome"
-             data-lang-placeholder="contact_name_ph"
-             required
-           />
-
-
-
+          <input
+            type="text"
+            id="contact-name"
+            placeholder="Seu Nome"
+            data-lang-placeholder="contact_name_ph"
+            required
+          />
+          <input
+            type="email"
+            id="contact-email"
+            placeholder="Seu Email"
+            data-lang-placeholder="contact_email_ph"
+            required
+          />
+          <textarea
+            id="contact-message"
+            placeholder="Sua Mensagem"
+            data-lang-placeholder="contact_msg_ph"
+            required
+          ></textarea>
           <button type="submit" class="download-btn" data-lang="btn_send_msg">
             Enviar Mensagem
           </button>
