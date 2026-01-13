@@ -1127,14 +1127,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const end = currentPage * ITEMS_PER_PAGE;
     const productsToRender = currentFilteredProducts.slice(start, end);
 
+    const maxId = allProducts.reduce((max, p) => Math.max(max, p.id), 0);
+
     productList.innerHTML = "";
     let productsHTML = "";
     productsToRender.forEach((product, index) => {
-      const productDate = new Date(product.date);
-      const now = new Date();
-      const diffTime = now - productDate;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      const isNew = !isNaN(diffDays) && diffDays >= 0 && diffDays <= 30;
+      const isNew = product.id === maxId;
 
       const name = getLocalized(product, 'name');
       const price = product.price || "00";
