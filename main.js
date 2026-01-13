@@ -2760,17 +2760,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (footer) {
       const currentYear = new Date().getFullYear();
       const ceoName = "Francisco Armando Chico | Kas Cranky";
-      const ceoContent = (currentUser && !currentUser.isAnonymous)
-        ? `<a href="https://www.instagram.com/kascranky1" target="_blank" class="ceo-link">${ceoName}</a>`
-        : ceoName;
+      const ceoContent = `<a href="https://www.instagram.com/kascranky" target="_blank" class="ceo-link">${ceoName}</a>`;
 
       footer.innerHTML = `
         <div class="footer-container">
           <p>&copy; ${currentYear} SoftSafe — Todos os direitos reservados</p>
-          <p class="footer-ceo">CEO (${ceoContent})</p>
+          <p class="footer-ceo">CEO: ${ceoContent}</p>
+          <div class="footer-partners">
+            <h4>Parceiros</h4>
+            <div class="partners-logos">
+              <img src="assets/softsafe.png" alt="SoftSafe Partner" class="partner-logo">
+            </div>
+          </div>
           <div class="footer-socials">
-            <a href="https://facebook.com" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-            <a href="https://instagram.com" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.facebook.com/softsafecore" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://www.instagram.com/softsafecore" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
             <a href="https://twitter.com" target="_blank" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
           </div>
           <div class="footer-legal">

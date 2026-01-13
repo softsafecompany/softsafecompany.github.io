@@ -403,18 +403,50 @@ body.menu-open .back-to-top {
 .footer-ceo {
   font-weight: 500;
   margin: 5px 0;
-  color: #bbb;
+  color: #ffffff;
 }
 
 .ceo-link {
-  color: #1f4cff;
+  color: #ffffff;
   text-decoration: none;
   transition: color 0.3s;
 }
 
 .ceo-link:hover {
-  color: #3a66ff;
+  color: #8794c5;
   text-decoration: underline;
+}
+
+.footer-partners {
+  margin: 10px 0;
+  text-align: center;
+}
+
+.footer-partners h4 {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: #bbb;
+  font-weight: 500;
+}
+
+.partners-logos {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.partner-logo {
+  height: 30px;
+  width: auto;
+  opacity: 0.6;
+  transition: opacity 0.3s, filter 0.3s;
+  filter: grayscale(100%);
+}
+
+.partner-logo:hover {
+  opacity: 1;
+  filter: grayscale(0%);
 }
 
 .footer-socials {
