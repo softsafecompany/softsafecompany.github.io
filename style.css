@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * {
@@ -3269,4 +3270,10 @@ body.dark-mode .filter-btn.active {
 
 .add-cart-btn:hover {
   background: #d35400;
+}
+
+.product-version {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 5px 0;
 }

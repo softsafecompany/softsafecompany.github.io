@@ -1,7 +1,7 @@
 [
   {
     "id": 1,
-    "name": "Removedor de fundo suave",
+    "name": "BG Remover Pro (DEMO) ",
     "date": "2025-12-27",
     "image": "assets/product.png",
     "title": "Removedor de fundo suave",
@@ -12,6 +12,34 @@
     "compatibility": "Windows 10/11",
     "description": "O Soft Background Remover é uma ferramenta avançada que utiliza tecnologia de IA para remover fundos de imagens sem esforço. \n Essa versão é uma versão DEMO com funcionalidades limitadas para testes. \n Perfeito para criar fotos com aparência profissional para e-commerce, redes sociais e muito mais. \n Ele funciona 100% offline, garantindo a privacidade dos seus dados sem necessidade de conexão com a internet. \n Com uma interface intuitiva, você pode facilmente carregar suas imagens, ajustar configurações e salvar os resultados em diversos formatos. Experimente o Soft Background Remover e transforme suas fotos com facilidade e segurança.\n\n🎨 FUNCIONALIDADES\n\nHOME SCREEN:\n\n ✅ Seleção de cor de fundo \n ✅ Processamento em lote\n✅ Verificação de atualizações\n✅ Drag & Drop de arquivos\n✅ Limpeza de logs\n✅ Janela \"Sobre\"\n\nEDITOR:\n✅ 🤖 Auto Remove (IA)\n✅ ✨ Magic Erase (flood fill)\n✅ 🗑️ Eraser (borracha)\n✅ ✏️ Pencil (restaurador)\n✅ ✋ Pan Mode (mover)\n✅ 🔁 Rotate (girar)\n✅ 🪢 Lasso (seleção livre)\n✅ 🔄 Invert Mask (inverter)\n✅ 🖥️ Fullscreen (tela cheia / Mover header pra baixo)\n\nCONTROLES:\n✅ Slider de tamanho (5-150px)\n✅ Controle de dureza (1-100%)\n✅ Zoom com mouse wheel (10%-500%)\n✅ Undo/Redo (até 15 estados)\n✅ Atalhos personalizáveis\n\nSTATUS: ✅ 100% FUNCIONAL",
     "download_link": "https://www.mediafire.com/file/52hu94xr9y9smpc/%2528DEMO%2529_Soft_BG_Remover_1.3.2_%2528teste_Beta%2529.exe/file",
+    "media": [
+      {
+        "type": "image",
+        "src": "assets/Captura de Ecrã (207).png"
+      },
+      {
+        "type": "image",
+        "src": "assets/Captura de Ecrã (206).png"
+      },
+      {
+        "type": "video",
+        "src": "https://www.w3schools.com/html/mov_bbb.mp4"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "BG Remover Pro",
+    "date": "2026-01-13",
+    "image": "assets/product_2.png",
+    "title": "Removedor de fundo suave 2.0",
+    "price": "00",
+    "size": "305 MB",
+    "version": "2.0.0",
+    "author": "SoftSafe Company",
+    "compatibility": "Windows 10/11",
+    "description": "O Soft Background Remover é uma ferramenta avançada que utiliza tecnologia de IA para remover fundos de imagens sem esforço. \n Essa versão é uma versão DEMO com funcionalidades limitadas para testes. \n Perfeito para criar fotos com aparência profissional para e-commerce, redes sociais e muito mais. \n Ele funciona 100% offline, garantindo a privacidade dos seus dados sem necessidade de conexão com a internet. \n Com uma interface intuitiva, você pode facilmente carregar suas imagens, ajustar configurações e salvar os resultados em diversos formatos. Experimente o Soft Background Remover e transforme suas fotos com facilidade e segurança.\n\n🎨 FUNCIONALIDADES\n\nHOME SCREEN:\n\n ✅ Seleção de cor de fundo \n ✅ Processamento em lote\n✅ Verificação de atualizações\n✅ Drag & Drop de arquivos\n✅ Limpeza de logs\n✅ Janela \"Sobre\"\n\nEDITOR:\n✅ 🤖 Auto Remove (IA)\n✅ ✨ Magic Erase (flood fill)\n✅ 🗑️ Eraser (borracha)\n✅ ✏️ Pencil (restaurador)\n✅ ✋ Pan Mode (mover)\n✅ 🔁 Rotate (girar)\n✅ 🪢 Lasso (seleção livre)\n✅ 🔄 Invert Mask (inverter)\n✅ 🖥️ Fullscreen (tela cheia / Mover header pra baixo)\n\nCONTROLES:\n✅ Slider de tamanho (5-150px)\n✅ Controle de dureza (1-100%)\n✅ Zoom com mouse wheel (10%-500%)\n✅ Undo/Redo (até 15 estados)\n✅ Atalhos personalizáveis\n\nSTATUS: ✅ 100% FUNCIONAL",
+    "download_link": "https://www.mediafire.com/file/vpqvt9deo1jkyf2/Soft_BG_Remover_v2.0.exe/file",
     "media": [
       {
         "type": "image",

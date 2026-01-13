@@ -1151,6 +1151,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ${isNew ? '<span class="new-badge">Novo</span>' : ''}
             <img src="${product.image}" alt="${product.name}">
             <h4>${name}</h4>
+            <p class="product-version">Versão: ${product.version}</p>
             <div class="product-rating-list" id="product-rating-${product.id}">
                <span class="stars-display">☆☆☆☆☆</span> <span class="rating-value">(0.0)</span>
             </div>
