@@ -2454,7 +2454,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 300); // Match animation duration
   };
 
-  // Open modal with product details
+  // Open modal with product details right
   function openModal(product) {
     currentOpenProductId = product.id;
     document.getElementById("modal-title").textContent = getLocalized(product, 'title');
