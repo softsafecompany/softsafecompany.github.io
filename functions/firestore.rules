@@ -17,39 +17,53 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if true;
-      // Permite criar doc de produto apenas com campos agregados permitidos.
-      allow create: if request.auth != null
-        && request.resource.data.keys().hasOnly(['averageRating', 'ratingCount', 'clicks'])
-        && request.resource.data.keys().hasAny(['averageRating', 'ratingCount', 'clicks'])
-        && (!('averageRating' in request.resource.data) || (
-            request.resource.data.averageRating is number
-            && request.resource.data.averageRating >= 0
-            && request.resource.data.averageRating <= 5
-          ))
-        && (!('ratingCount' in request.resource.data) || (
-            request.resource.data.ratingCount is number
-            && request.resource.data.ratingCount >= 0
-          ))
-        && (!('clicks' in request.resource.data) || (
-            request.resource.data.clicks is number
-            && request.resource.data.clicks >= 0
-          ));
-      // Em updates, só deixa alterar averageRating/ratingCount/clicks.
-      allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['averageRating', 'ratingCount', 'clicks'])
-        && (!('averageRating' in request.resource.data) || (
-            request.resource.data.averageRating is number
-            && request.resource.data.averageRating >= 0
-            && request.resource.data.averageRating <= 5
-          ))
-        && (!('ratingCount' in request.resource.data) || (
-            request.resource.data.ratingCount is number
-            && request.resource.data.ratingCount >= 0
-          ))
-        && (!('clicks' in request.resource.data) || (
-            request.resource.data.clicks is number
-            && request.resource.data.clicks >= 0
-          ));
+      // Clicks (visualizacoes): permite criar/atualizar sem auth apenas este campo.
+      allow create: if (
+          request.resource.data.keys().hasOnly(['clicks']) &&
+          request.resource.data.clicks is number &&
+          request.resource.data.clicks >= 0
+        ) || (
+          request.auth != null
+          && request.resource.data.keys().hasOnly(['averageRating', 'ratingCount', 'clicks'])
+          && request.resource.data.keys().hasAny(['averageRating', 'ratingCount', 'clicks'])
+          && (!('averageRating' in request.resource.data) || (
+              request.resource.data.averageRating is number
+              && request.resource.data.averageRating >= 0
+              && request.resource.data.averageRating <= 5
+            ))
+          && (!('ratingCount' in request.resource.data) || (
+              request.resource.data.ratingCount is number
+              && request.resource.data.ratingCount >= 0
+            ))
+          && (!('clicks' in request.resource.data) || (
+              request.resource.data.clicks is number
+              && request.resource.data.clicks >= 0
+            ))
+        );
+
+      // Em update: permite clicks sem auth; agregados de avaliacao exigem auth.
+      allow update: if (
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['clicks']) &&
+          request.resource.data.clicks is number &&
+          request.resource.data.clicks >= 0 &&
+          request.resource.data.clicks >= resource.data.clicks
+        ) || (
+          request.auth != null
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['averageRating', 'ratingCount', 'clicks'])
+          && (!('averageRating' in request.resource.data) || (
+              request.resource.data.averageRating is number
+              && request.resource.data.averageRating >= 0
+              && request.resource.data.averageRating <= 5
+            ))
+          && (!('ratingCount' in request.resource.data) || (
+              request.resource.data.ratingCount is number
+              && request.resource.data.ratingCount >= 0
+            ))
+          && (!('clicks' in request.resource.data) || (
+              request.resource.data.clicks is number
+              && request.resource.data.clicks >= 0
+            ))
+        );
       allow delete: if false;
 
       match /ratings/{userId} {
