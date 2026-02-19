@@ -4,7 +4,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, updatePassword, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage, ref, uploadString, getDownloadURL, uploadBytesResumable, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 
@@ -25,7 +24,6 @@ const db = getFirestore(app);
 console.log("firebase inicializado");
 const auth = getAuth(app);
 const storage = getStorage(app);
-const functions = getFunctions(app);
 
 setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error("Erro ao definir persistência:", error);
@@ -39,6 +37,7 @@ let unsubscribeProductComments = null; // Listener de comentários do produto
 let unsubscribeUserProfile = null; // Listener do perfil do usuário logado
 let userRatingSelection = 0; // Nota selecionada pelo usuário
 let isUserRating = false; // Se o usuário está interagindo com as estrelas
+const pendingProductViews = new Set();
 
 document.addEventListener("DOMContentLoaded", () => {
   const productList = document.getElementById("product-list");
@@ -439,6 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
     renderFooter();
+    if (user) flushPendingProductViews();
     if (user) {
       // Listen for notifications
       listenForNotifications(user.uid);
@@ -1157,9 +1157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!productPage || !product) return;
     currentOpenProductId = product.id;
 
-    // Registrar visualizacao tambem no layout "Ver mais" (pagina dinamica).
-    const registerView = httpsCallable(functions, 'registerView');
-    registerView({ productId: product.id }).catch(console.error);
+    incrementProductView(product.id);
 
     const title = getLocalized(product, "name");
     const subtitle = getLocalized(product, "title");
@@ -1600,6 +1598,30 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       toggleLoading(false);
     }
+  }
+
+  function incrementProductView(productId) {
+    const activeUser = auth.currentUser || currentUser;
+    if (!activeUser) {
+      pendingProductViews.add(String(productId));
+      return;
+    }
+
+    const productRef = doc(db, "products", String(productId));
+    updateDoc(productRef, { clicks: increment(1) }).catch((error) => {
+      // Se o documento ainda nao existir, cria com merge.
+      setDoc(productRef, { clicks: 1 }, { merge: true }).catch((createErr) => {
+        console.warn("Falha ao registrar view:", error?.code || error, createErr?.code || createErr);
+        pendingProductViews.add(String(productId));
+      });
+    });
+  }
+
+  function flushPendingProductViews() {
+    if (pendingProductViews.size === 0) return;
+    const ids = Array.from(pendingProductViews);
+    pendingProductViews.clear();
+    ids.forEach((id) => incrementProductView(id));
   }
 
   function handleRoute() {
@@ -2992,8 +3014,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('rating-comment').value = '';
 
     // Incrementar contador de cliques (views) do produto no Firestore
-    const registerView = httpsCallable(functions, 'registerView');
-    registerView({ productId: product.id }).catch(console.error);
+    incrementProductView(product.id);
 
     updateStarsUI(0, stars);
     loadProductRatingAndComments(product.id, {

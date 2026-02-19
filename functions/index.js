@@ -1,32 +1,32 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
+const admin = require("firebase-admin");
+const {setGlobalOptions} = require("firebase-functions/v2");
+const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+admin.initializeApp();
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+setGlobalOptions({maxInstances: 10});
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+exports.registerView = onCall(async (request) => {
+  const {productId} = request.data || {};
+
+  if (productId === undefined || productId === null || productId === "") {
+    throw new HttpsError("invalid-argument", "productId e obrigatorio.");
+  }
+
+  const productRef = admin
+      .firestore()
+      .collection("products")
+      .doc(String(productId));
+
+  try {
+    await productRef.set({
+      clicks: admin.firestore.FieldValue.increment(1),
+    }, {merge: true});
+
+    return {success: true};
+  } catch (error) {
+    logger.error("registerView falhou", {productId, error: String(error)});
+    throw new HttpsError("internal", "Falha ao registrar visualizacao.");
+  }
+});
