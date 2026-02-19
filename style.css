@@ -3372,7 +3372,7 @@ body.dark-mode .filter-btn.active {
 .profile-page .profile-img-wrapper {
   width: 176px;
   height: 176px;
-  padding: 10px;
+  padding: 15px;
   box-sizing: border-box;
   border-radius: 24px;
   border: 2px solid rgba(170, 194, 255, 0.55);

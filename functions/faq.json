@@ -26,5 +26,21 @@
     {
         "question": "Existe uma versão de teste disponível?",
         "answer": "Sim, oferecemos versões de teste gratuitas para que você possa experimentar nossos softwares antes de fazer uma compra."
+    },
+    {
+        "question": "Posso solicitar uma funcionalidade específica?",
+        "answer": "Estamos sempre abertos a sugestões! Você pode entrar em contato conosco através do nosso site para solicitar novas funcionalidades ou melhorias."
+    },
+    {
+        "question": "Como posso relatar um bug?",
+        "answer": "Se você encontrar algum bug, por favor, reporte-o através do nosso sistema de suporte ou envie um e-mail para nossa equipe de desenvolvimento."
+    },  
+    {
+        "question": "Quais são os requisitos mínimos do sistema?",
+        "answer": "Nossos softwares exigem Windows 10 ou 11, um processador de 1 GHz ou mais rápido, 4 GB de RAM e pelo menos 500 MB de espaço livre em disco."
+    },
+    {
+        "question": "Posso usar o software em mais de um dispositivo?",
+        "answer": "Sim, nossas licenças permitem a instalação em múltiplos dispositivos, desde que sejam para uso pessoal e não comercial. Consulte os termos de licença para mais detalhes."
     }
 ]
