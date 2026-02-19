@@ -113,17 +113,51 @@ document.addEventListener("DOMContentLoaded", () => {
         </button>
       </div>
       <div class="product-page-content">
-        <div class="product-page-media" id="product-page-media"></div>
+        <div class="product-page-media">
+          <div class="carousel product-page-carousel" id="product-page-carousel" style="display:none;">
+            <div class="carousel-inner" id="product-page-carousel-inner"></div>
+            <button class="carousel-control prev" id="product-page-carousel-prev">&#10094;</button>
+            <button class="carousel-control next" id="product-page-carousel-next">&#10095;</button>
+            <div class="carousel-dots" id="product-page-carousel-dots"></div>
+          </div>
+          <div id="product-page-thumbnails" class="product-page-thumbnails"></div>
+          <div id="product-page-media-fallback"></div>
+        </div>
         <div class="product-page-info">
           <h1 id="product-page-title"></h1>
           <p id="product-page-subtitle" class="product-page-subtitle"></p>
           <div class="product-page-meta" id="product-page-meta"></div>
           <p id="product-page-description" class="product-page-description"></p>
+          <div class="rating-container product-page-rating-container">
+            <div id="product-page-star-rating" class="stars">
+              <span class="star product-page-star" data-value="1">★</span>
+              <span class="star product-page-star" data-value="2">★</span>
+              <span class="star product-page-star" data-value="3">★</span>
+              <span class="star product-page-star" data-value="4">★</span>
+              <span class="star product-page-star" data-value="5">★</span>
+            </div>
+            <span id="product-page-rating-count">(0 avaliacoes)</span>
+          </div>
+          <div class="rating-form product-page-rating-form">
+            <textarea id="product-page-rating-comment" placeholder="Escreva um comentario sobre o produto (opcional)"></textarea>
+            <button id="product-page-submit-rating-btn" class="download-btn" style="font-size: 0.9rem; padding: 8px 15px; margin-top: 5px">Enviar</button>
+          </div>
+          <div id="product-page-comments-container" class="product-page-comments-container">
+            <h3>Avaliacoes</h3>
+            <div id="product-page-comments-list" class="comment-list"></div>
+          </div>
           <div class="product-page-actions">
             <a id="product-page-download" class="download-btn" target="_blank" rel="noopener">Download</a>
             <button id="product-page-whatsapp" class="whatsapp-share-btn">
               <i class="fab fa-whatsapp"></i> Partilhar no WhatsApp
             </button>
+            <a id="product-page-facebook" class="product-share-btn facebook" target="_blank" rel="noopener">
+              <i class="fab fa-facebook-f"></i> Facebook
+            </a>
+            <a id="product-page-x" class="product-share-btn x" target="_blank" rel="noopener">
+              <i class="fab fa-x-twitter"></i> X
+            </a>
+            <button id="product-page-copy-link" class="share-action-btn">Copiar link</button>
           </div>
         </div>
       </div>
@@ -134,13 +168,27 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   const productPage = document.getElementById("product-page");
   const productPageBack = document.getElementById("product-page-back");
-  const productPageMedia = document.getElementById("product-page-media");
+  const productPageCarousel = document.getElementById("product-page-carousel");
+  const productPageCarouselInner = document.getElementById("product-page-carousel-inner");
+  const productPageCarouselPrev = document.getElementById("product-page-carousel-prev");
+  const productPageCarouselNext = document.getElementById("product-page-carousel-next");
+  const productPageCarouselDots = document.getElementById("product-page-carousel-dots");
+  const productPageThumbnails = document.getElementById("product-page-thumbnails");
+  const productPageMediaFallback = document.getElementById("product-page-media-fallback");
   const productPageTitle = document.getElementById("product-page-title");
   const productPageSubtitle = document.getElementById("product-page-subtitle");
   const productPageMeta = document.getElementById("product-page-meta");
   const productPageDescription = document.getElementById("product-page-description");
   const productPageDownload = document.getElementById("product-page-download");
   const productPageWhatsapp = document.getElementById("product-page-whatsapp");
+  const productPageFacebook = document.getElementById("product-page-facebook");
+  const productPageX = document.getElementById("product-page-x");
+  const productPageCopyLink = document.getElementById("product-page-copy-link");
+  const productPageStars = document.querySelectorAll(".product-page-star");
+  const productPageRatingCount = document.getElementById("product-page-rating-count");
+  const productPageRatingComment = document.getElementById("product-page-rating-comment");
+  const productPageSubmitRatingBtn = document.getElementById("product-page-submit-rating-btn");
+  const productPageCommentsList = document.getElementById("product-page-comments-list");
 
   // State for Filters and Cart
   let currentFilter = 'all';
@@ -1012,8 +1060,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const ITEMS_PER_PAGE = 6;
   let currentPage = 1;
   let currentCarouselIndex = 0;
+  let currentProductPageCarouselIndex = 0;
   let currentOpenProductId = null;
   let currentMedia = [];
+  let currentProductPageMedia = [];
 
   // Helper for localization
   // Agora suporta tradução automática armazenada em propriedades _en
@@ -1043,6 +1093,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function openProductPage(product, pushState = true) {
     if (!productPage || !product) return;
+    currentOpenProductId = product.id;
 
     const title = getLocalized(product, "name");
     const subtitle = getLocalized(product, "title");
@@ -1069,15 +1120,43 @@ document.addEventListener("DOMContentLoaded", () => {
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`;
       window.open(whatsappUrl, "_blank");
     };
+    if (productPageFacebook) {
+      productPageFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    }
+    if (productPageX) {
+      productPageX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    }
+    if (productPageCopyLink) {
+      productPageCopyLink.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+          showToast("Link copiado!", "success");
+        } catch (error) {
+          customAlert("Nao foi possivel copiar o link.", "Erro");
+        }
+      };
+    }
 
-    // Media
-    productPageMedia.innerHTML = "";
+    // Media carousel
     const mediaList = Array.isArray(product.media) ? product.media : [];
-    const mainMedia = mediaList.length > 0 ? mediaList[0] : { type: "image", src: product.image };
-    if (mainMedia && mainMedia.type === "video") {
-      productPageMedia.innerHTML = `<video src="${mainMedia.src}" controls></video>`;
-    } else if (mainMedia && mainMedia.src) {
-      productPageMedia.innerHTML = `<img src="${mainMedia.src}" alt="${title}">`;
+    currentProductPageMedia = mediaList.length > 0 ? mediaList : [{ type: "image", src: product.image }];
+    currentProductPageCarouselIndex = 0;
+    renderProductPageCarousel(title);
+
+    if (productPageRatingComment) productPageRatingComment.value = "";
+    userRatingSelection = 0;
+    isUserRating = false;
+    updateStarsUI(0, productPageStars);
+    loadProductRatingAndComments(product.id, {
+      ratingCountElem: productPageRatingCount,
+      commentsListElem: productPageCommentsList,
+      starsElem: productPageStars
+    });
+
+    if (productPageDownload) {
+      const price = product.price || "00";
+      const isPaid = price !== "00";
+      productPageDownload.textContent = isPaid ? "Comprar" : "Download";
     }
 
     setMainSectionsVisible(false);
@@ -1094,7 +1173,261 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!productPage) return;
     productPage.style.display = "none";
     setMainSectionsVisible(true);
+    if (unsubscribeProduct) {
+      unsubscribeProduct();
+      unsubscribeProduct = null;
+    }
+    if (unsubscribeProductComments) {
+      unsubscribeProductComments();
+      unsubscribeProductComments = null;
+    }
     if (pushState) history.pushState({}, "", window.location.pathname);
+  }
+
+  function renderProductPageCarousel(title) {
+    if (!productPageCarouselInner || !productPageCarouselDots || !productPageCarousel || !productPageMediaFallback || !productPageThumbnails) return;
+
+    productPageCarouselInner.innerHTML = "";
+    productPageCarouselDots.innerHTML = "";
+    productPageThumbnails.innerHTML = "";
+    productPageMediaFallback.innerHTML = "";
+
+    if (!currentProductPageMedia.length) {
+      productPageCarousel.style.display = "none";
+      return;
+    }
+
+    productPageCarousel.style.display = "block";
+    currentProductPageMedia.forEach((media, index) => {
+      const item = document.createElement("div");
+      item.className = "carousel-item";
+      const mediaSrc = (media && media.src) ? String(media.src).trim() : "";
+      const youtubeId = media.type === "video" ? getYoutubeId(mediaSrc) : null;
+
+      if (media.type === "video" && youtubeId) {
+        const embedSrc = `https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1&enablejsapi=1`;
+        item.innerHTML = `<iframe src="${embedSrc}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen data-yt="1"></iframe>`;
+      } else if (media.type === "video") {
+        item.innerHTML = `<video src="${mediaSrc}" controls preload="metadata"></video>`;
+      } else {
+        item.innerHTML = `<img src="${mediaSrc}" alt="${title}">`;
+      }
+      productPageCarouselInner.appendChild(item);
+
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      dot.onclick = () => {
+        currentProductPageCarouselIndex = index;
+        updateProductPageCarouselPosition();
+      };
+      productPageCarouselDots.appendChild(dot);
+
+      const thumb = document.createElement("button");
+      thumb.type = "button";
+      thumb.className = "product-page-thumb";
+      thumb.setAttribute("aria-label", `Miniatura ${index + 1}`);
+      if (media.type === "video" && youtubeId) {
+        thumb.innerHTML = `<img src="https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg" alt="Miniatura de video"><span class="thumb-video-badge">▶</span>`;
+      } else if (media.type === "video") {
+        thumb.innerHTML = `<span class="thumb-video-fallback">VIDEO</span>`;
+      } else {
+        thumb.innerHTML = `<img src="${mediaSrc}" alt="Miniatura ${index + 1}">`;
+      }
+      thumb.onclick = () => {
+        currentProductPageCarouselIndex = index;
+        updateProductPageCarouselPosition();
+      };
+      productPageThumbnails.appendChild(thumb);
+    });
+
+    const showControls = currentProductPageMedia.length > 1;
+    if (productPageCarouselPrev) productPageCarouselPrev.style.display = showControls ? "block" : "none";
+    if (productPageCarouselNext) productPageCarouselNext.style.display = showControls ? "block" : "none";
+    productPageThumbnails.style.display = showControls ? "grid" : "none";
+    updateProductPageCarouselPosition();
+  }
+
+  function updateProductPageCarouselPosition() {
+    if (!productPageCarouselInner) return;
+    productPageCarouselInner.style.transform = `translateX(-${currentProductPageCarouselIndex * 100}%)`;
+
+    if (productPageCarouselDots) {
+      const dots = productPageCarouselDots.getElementsByClassName("dot");
+      for (let i = 0; i < dots.length; i++) {
+        dots[i].className = dots[i].className.replace(" active", "");
+      }
+      if (dots[currentProductPageCarouselIndex]) {
+        dots[currentProductPageCarouselIndex].className += " active";
+      }
+    }
+
+    const videos = productPageCarouselInner.querySelectorAll("video");
+    videos.forEach((video, index) => {
+      if (index === currentProductPageCarouselIndex) return;
+      video.pause();
+      video.currentTime = 0;
+    });
+
+    const youtubeIframes = productPageCarouselInner.querySelectorAll("iframe[data-yt='1']");
+    youtubeIframes.forEach((iframe, index) => {
+      if (index === currentProductPageCarouselIndex) return;
+      iframe.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func: "pauseVideo", args: "" }),
+        "*"
+      );
+    });
+
+    if (productPageThumbnails) {
+      const thumbs = productPageThumbnails.querySelectorAll(".product-page-thumb");
+      thumbs.forEach((thumb, index) => {
+        thumb.classList.toggle("active", index === currentProductPageCarouselIndex);
+      });
+    }
+  }
+
+  if (productPageCarouselPrev && productPageCarouselNext) {
+    productPageCarouselPrev.addEventListener("click", () => {
+      if (currentProductPageMedia.length <= 1) return;
+      currentProductPageCarouselIndex =
+        currentProductPageCarouselIndex > 0
+          ? currentProductPageCarouselIndex - 1
+          : currentProductPageMedia.length - 1;
+      updateProductPageCarouselPosition();
+    });
+    productPageCarouselNext.addEventListener("click", () => {
+      if (currentProductPageMedia.length <= 1) return;
+      currentProductPageCarouselIndex =
+        currentProductPageCarouselIndex < currentProductPageMedia.length - 1
+          ? currentProductPageCarouselIndex + 1
+          : 0;
+      updateProductPageCarouselPosition();
+    });
+  }
+
+  function updateStarsUI(value, starsElem) {
+    if (!starsElem || !starsElem.forEach) return;
+    starsElem.forEach((star) => {
+      star.classList.toggle("filled", parseInt(star.dataset.value, 10) <= value);
+    });
+  }
+
+  function loadProductRatingAndComments(productId, { ratingCountElem, commentsListElem, starsElem }) {
+    if (unsubscribeProduct) unsubscribeProduct();
+    if (unsubscribeProductComments) unsubscribeProductComments();
+
+    if (ratingCountElem) ratingCountElem.textContent = "(Carregando...)";
+    unsubscribeProduct = onSnapshot(doc(db, "products", String(productId)), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const avg = data.averageRating || 0;
+        const count = data.ratingCount || 0;
+        if (!isUserRating) updateStarsUI(Math.round(avg), starsElem);
+        if (ratingCountElem) ratingCountElem.textContent = `(${avg.toFixed(1)} / ${count} avaliacoes)`;
+      } else if (ratingCountElem) {
+        ratingCountElem.textContent = "(0 avaliacoes)";
+      }
+    }, () => {
+      if (ratingCountElem) ratingCountElem.textContent = "(Offline)";
+    });
+
+    if (!commentsListElem) return;
+    commentsListElem.innerHTML = "<p>Carregando avaliacoes...</p>";
+
+    const ratingsQuery = query(
+      collection(db, "products", String(productId), "ratings"),
+      orderBy("timestamp", "desc")
+    );
+
+    unsubscribeProductComments = onSnapshot(ratingsQuery, (snapshot) => {
+      commentsListElem.innerHTML = "";
+      if (snapshot.empty) {
+        commentsListElem.innerHTML = '<p style="color:#666; font-style:italic; font-size: 0.9rem;">Seja o primeiro a avaliar!</p>';
+        return;
+      }
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const starsText = "★★★★★☆☆☆☆☆".slice(5 - (data.rating || 0), 10 - (data.rating || 0));
+        const div = document.createElement("div");
+        div.className = "comment";
+        div.innerHTML = `
+          <div class="comment-avatar">👤</div>
+          <div class="comment-content">
+            <h5>${data.userName || "Usuario"} <small class="comment-date">${data.timestamp ? data.timestamp.toDate().toLocaleDateString() : ""}</small></h5>
+            <div class="comment-rating">${starsText}</div>
+            <p>${data.comment || ""}</p>
+          </div>
+        `;
+        commentsListElem.appendChild(div);
+      });
+    }, () => {
+      commentsListElem.innerHTML = "<p>Erro ao carregar comentarios.</p>";
+    });
+  }
+
+  async function submitProductRating(commentValue, starsElem, commentInputElem) {
+    if (!currentUser) {
+      customAlert("Faca login para avaliar.", "Erro");
+      return;
+    }
+    if (!currentOpenProductId) return;
+    if (userRatingSelection === 0) {
+      customAlert("Por favor, selecione uma nota (estrelas).", "Aviso");
+      return;
+    }
+
+    const productRef = doc(db, "products", String(currentOpenProductId));
+    const ratingRef = doc(db, "products", String(currentOpenProductId), "ratings", currentUser.uid);
+
+    toggleLoading(true);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const ratingDoc = await transaction.get(ratingRef);
+        const productDoc = await transaction.get(productRef);
+
+        let currentRatingCount = 0;
+        let currentAverage = 0;
+
+        if (productDoc.exists()) {
+          const data = productDoc.data();
+          currentRatingCount = data.ratingCount || 0;
+          currentAverage = data.averageRating || 0;
+        }
+
+        let newSum = currentAverage * currentRatingCount;
+        let newCount = currentRatingCount;
+
+        if (ratingDoc.exists()) {
+          const oldRating = ratingDoc.data().rating;
+          newSum -= oldRating;
+        } else {
+          newCount++;
+        }
+
+        newSum += userRatingSelection;
+        const newAverage = newCount > 0 ? newSum / newCount : 0;
+
+        transaction.set(ratingRef, {
+          rating: userRatingSelection,
+          comment: commentValue,
+          userId: currentUser.uid,
+          userName: currentUser.displayName || "Usuario",
+          timestamp: new Date()
+        }, { merge: true });
+
+        transaction.set(productRef, { averageRating: newAverage, ratingCount: newCount }, { merge: true });
+      });
+
+      isUserRating = false;
+      if (commentInputElem) commentInputElem.value = "";
+      if (starsElem) updateStarsUI(0, starsElem);
+      userRatingSelection = 0;
+      customAlert("Obrigado pela sua avaliacao!", "Sucesso");
+    } catch (err) {
+      customAlert("Erro ao salvar avaliacao: " + err.message, "Erro");
+    } finally {
+      toggleLoading(false);
+    }
   }
 
   function handleRoute() {
@@ -1114,6 +1447,30 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("popstate", handleRoute);
   if (productPageBack) {
     productPageBack.addEventListener("click", () => closeProductPage(true));
+  }
+
+  if (productPageStars && productPageStars.length) {
+    productPageStars.forEach((star) => {
+      star.addEventListener("click", () => {
+        if (!currentUser) {
+          customAlert("Aguarde a autenticacao para avaliar.", "Aviso");
+          return;
+        }
+        userRatingSelection = parseInt(star.dataset.value, 10);
+        isUserRating = true;
+        updateStarsUI(userRatingSelection, productPageStars);
+      });
+    });
+  }
+
+  if (productPageSubmitRatingBtn) {
+    productPageSubmitRatingBtn.addEventListener("click", () => {
+      submitProductRating(
+        productPageRatingComment ? productPageRatingComment.value : "",
+        productPageStars,
+        productPageRatingComment
+      );
+    });
   }
 
   // Product Logic (Only if productList exists)
@@ -2461,76 +2818,17 @@ document.addEventListener("DOMContentLoaded", () => {
     userRatingSelection = 0;
     isUserRating = false;
     document.getElementById('rating-comment').value = '';
-    if (unsubscribeProduct) unsubscribeProduct(); // Limpar listener anterior
-    if (unsubscribeProductComments) unsubscribeProductComments(); // Limpar listener de comentários
 
     // Incrementar contador de cliques (views) do produto no Firestore
     const registerView = httpsCallable(functions, 'registerView');
     registerView({ productId: product.id }).catch(console.error);
 
-    // Reset Stars
-    stars.forEach(s => s.classList.remove('filled'));
-    if (ratingCountElem) ratingCountElem.textContent = "(Carregando...)";
-
-    // Listen for Rating Updates
-    unsubscribeProduct = onSnapshot(doc(db, "products", String(product.id)), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const avg = data.averageRating || 0;
-        const count = data.ratingCount || 0;
-
-        if (!isUserRating) {
-          stars.forEach(s => {
-            s.classList.toggle('filled', parseInt(s.dataset.value) <= Math.round(avg));
-          });
-        }
-        if (ratingCountElem) ratingCountElem.textContent = `(${avg.toFixed(1)} / ${count} avaliações)`;
-      } else {
-        if (ratingCountElem) ratingCountElem.textContent = "(0 avaliações)";
-      }
-    }, (error) => {
-      console.warn("Erro ao carregar avaliações:", error.code);
-      if (ratingCountElem) ratingCountElem.textContent = "(Offline)";
+    updateStarsUI(0, stars);
+    loadProductRatingAndComments(product.id, {
+      ratingCountElem: ratingCountElem,
+      commentsListElem: document.getElementById("product-comments-list"),
+      starsElem: stars
     });
-
-    // Load Product Comments
-    const commentsList = document.getElementById("product-comments-list");
-    if (commentsList) {
-      commentsList.innerHTML = '<p>Carregando avaliações...</p>';
-
-      const ratingsQuery = query(
-        collection(db, "products", String(product.id), "ratings"),
-        orderBy("timestamp", "desc")
-      );
-
-      unsubscribeProductComments = onSnapshot(ratingsQuery, (snapshot) => {
-        commentsList.innerHTML = "";
-        if (snapshot.empty) {
-          commentsList.innerHTML = '<p style="color:#666; font-style:italic; font-size: 0.9rem;">Seja o primeiro a avaliar!</p>';
-          return;
-        }
-
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const stars = "★★★★★☆☆☆☆☆".slice(5 - (data.rating || 0), 10 - (data.rating || 0));
-
-          const div = document.createElement("div");
-          div.className = "comment";
-          div.innerHTML = `
-            <div class="comment-avatar">👤</div>
-            <div class="comment-content">
-              <h5>${data.userName || "Usuário"} <small class="comment-date">${data.timestamp ? data.timestamp.toDate().toLocaleDateString() : ""}</small></h5>
-              <div class="comment-rating">${stars}</div>
-              <p>${data.comment || ""}</p>
-            </div>
-          `;
-          commentsList.appendChild(div);
-        });
-      }, (error) => {
-        console.error("Erro ao carregar comentários do produto:", error);
-        commentsList.innerHTML = '<p>Erro ao carregar comentários.</p>';
-      });
-    }
 
     // Setup Carousel
     currentCarouselIndex = 0;
@@ -2554,8 +2852,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     renderCarousel();
 
-    const downloadBtn = document.querySelector(".download-btn");
-    const shareActionBtn = document.querySelector(".share-action-btn");
+    const downloadBtn = modal ? modal.querySelector(".modal-actions .download-btn") : null;
+    const shareActionBtn = modal ? modal.querySelector(".share-action-btn") : null;
 
     // Share Button Logic
     if (shareActionBtn) {
@@ -2587,25 +2885,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Reset button state
-    downloadBtn.classList.remove("downloading");
-    const price = product.price || "00";
-    const isPaid = price !== "00";
-    downloadBtn.textContent = isPaid ? "Comprar" : "Download";
-    downloadBtn.disabled = false;
+    if (downloadBtn) {
+      downloadBtn.classList.remove("downloading");
+      const price = product.price || "00";
+      const isPaid = price !== "00";
+      downloadBtn.textContent = isPaid ? "Comprar" : "Download";
+      downloadBtn.disabled = false;
 
-    downloadBtn.onclick = () => {
-      triggerConfetti();
-      // downloadBtn.classList.add("downloading");
-      // downloadBtn.textContent = "Baixando...";
-      // downloadBtn.disabled = true;
+      downloadBtn.onclick = () => {
+        triggerConfetti();
+        // downloadBtn.classList.add("downloading");
+        // downloadBtn.textContent = "Baixando...";
+        // downloadBtn.disabled = true;
 
-      const width = 800;
-      const height = 600;
-      const left = (window.screen.width - width) / 2;
-      const top = (window.screen.height - height) / 2;
+        const width = 800;
+        const height = 600;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
 
-      window.open(product.download_link, 'DownloadPopup', `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`);
-    };
+        window.open(product.download_link, 'DownloadPopup', `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`);
+      };
+    }
 
     modal.style.display = "block";
   }
@@ -2622,10 +2922,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Apenas atualiza visualmente e salva o estado
         userRatingSelection = parseInt(star.dataset.value);
         isUserRating = true;
-
-        stars.forEach(s => {
-          s.classList.toggle('filled', parseInt(s.dataset.value) <= userRatingSelection);
-        });
+        updateStarsUI(userRatingSelection, stars);
       });
     });
   }
@@ -2634,64 +2931,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const submitRatingBtn = document.getElementById('submit-rating-btn');
   if (submitRatingBtn) {
     submitRatingBtn.addEventListener('click', () => {
-      if (!currentUser) return customAlert("Faça login para avaliar.", "Erro");
-      if (!currentOpenProductId) return;
-      if (userRatingSelection === 0) return customAlert("Por favor, selecione uma nota (estrelas).", "Aviso");
-
-      const comment = document.getElementById('rating-comment').value;
-      const productRef = doc(db, "products", String(currentOpenProductId));
-      const ratingRef = doc(db, "products", String(currentOpenProductId), "ratings", currentUser.uid);
-
-      toggleLoading(true);
-
-      runTransaction(db, async (transaction) => {
-        const ratingDoc = await transaction.get(ratingRef);
-        const productDoc = await transaction.get(productRef);
-
-        let currentRatingCount = 0;
-        let currentAverage = 0;
-
-        if (productDoc.exists()) {
-          const data = productDoc.data();
-          currentRatingCount = data.ratingCount || 0;
-          currentAverage = data.averageRating || 0;
-        }
-
-        let newSum = currentAverage * currentRatingCount;
-        let newCount = currentRatingCount;
-
-        if (ratingDoc.exists()) {
-          const oldRating = ratingDoc.data().rating;
-          newSum -= oldRating;
-        } else {
-          newCount++;
-        }
-
-        newSum += userRatingSelection;
-        const newAverage = newCount > 0 ? newSum / newCount : 0;
-
-        transaction.set(ratingRef, {
-          rating: userRatingSelection,
-          comment: comment,
-          userId: currentUser.uid,
-          userName: currentUser.displayName || "Usuário",
-          timestamp: new Date()
-        }, { merge: true });
-
-        transaction.set(productRef, { averageRating: newAverage, ratingCount: newCount }, { merge: true });
-      })
-        .then(() => {
-          toggleLoading(false);
-          console.log("Avaliação salva!");
-          customAlert("Obrigado pela sua avaliação!", "Sucesso");
-          isUserRating = false; // Retorna ao modo de visualização da média
-          document.getElementById('rating-comment').value = "";
-        })
-        .catch(err => {
-          toggleLoading(false);
-          console.error(err);
-          customAlert("Erro ao salvar avaliação: " + err.message, "Erro");
-        });
+      submitProductRating(
+        document.getElementById('rating-comment').value,
+        stars,
+        document.getElementById('rating-comment')
+      );
     });
   }
 
