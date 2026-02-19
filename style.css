@@ -3181,10 +3181,22 @@ body.dark-mode .auth-separator span {
 
 #product-page-download {
   width: 100%;
-  height: 42px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-weight: 700;
+  font-size: 1.02rem;
+  letter-spacing: 0.2px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2f63ff 0%, #1f4cff 100%);
+  box-shadow: 0 10px 24px rgba(31, 76, 255, 0.35);
+}
+
+#product-page-download:hover {
+  background: linear-gradient(135deg, #3e71ff 0%, #2c5bff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(31, 76, 255, 0.42);
 }
 
 .product-page-rating-container {
@@ -3205,37 +3217,22 @@ body.dark-mode .auth-separator span {
   margin-bottom: 10px;
 }
 
-.whatsapp-share-btn {
-  border: none;
+.whatsapp-share-btn,
+.product-share-btn,
+.share-action-btn {
   padding: 10px 12px;
-  background: #25d366;
-  color: #111;
-  font-weight: 600;
   border-radius: 8px;
-  cursor: pointer;
   height: 42px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .product-share-btn {
-  border: none;
-  padding: 10px 12px;
-  color: #fff;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 42px;
-}
-
-.whatsapp-share-btn,
-.share-action-btn {
-  padding: 10px 12px;
-  border-radius: 8px;
-  height: 42px;
 }
 
 .product-page-share-buttons > * {
@@ -3243,13 +3240,20 @@ body.dark-mode .auth-separator span {
   margin: 0;
 }
 
-.product-share-btn.facebook {
-  background: #1877f2;
+.product-page-share-buttons .whatsapp-share-btn,
+.product-page-share-buttons .product-share-btn,
+.product-page-share-buttons .share-action-btn {
+  background: #141414;
+  color: #f3f3f3;
+  border: 1px solid #343434;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-.product-share-btn.x {
-  background: #111;
-  border: 1px solid #3b3b3b;
+.product-page-share-buttons .whatsapp-share-btn:hover,
+.product-page-share-buttons .product-share-btn:hover,
+.product-page-share-buttons .share-action-btn:hover {
+  background: #1c1c1c;
+  border-color: #4a4a4a;
 }
 
 @media (max-width: 900px) {
