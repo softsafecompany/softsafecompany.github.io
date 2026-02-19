@@ -1639,6 +1639,7 @@ body.dark-mode .news-search-input {
   border: none;
   cursor: pointer;
   font-size: 1.2rem;
+  color: #fff;
   position: relative;
   padding: 5px;
 }
@@ -3154,7 +3155,7 @@ body.dark-mode .auth-separator span {
 
 .product-page-actions {
   display: grid;
-  grid-template-columns: minmax(150px, 180px) 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
   align-items: end;
 }

@@ -224,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setLoginBtnGuest() {
     if (!loginBtn) return;
-    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt login-icon"></i>';
+    loginBtn.innerHTML = '<i class="fa-solid fa-user login-icon"></i>';
     loginBtn.onclick = () => { if (loginModal) loginModal.style.display = "block"; };
   }
 
@@ -1125,6 +1125,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentOpenProductId = null;
   let currentMedia = [];
   let currentProductPageMedia = [];
+  let newestProductDateValue = null;
 
   // Helper for localization
   // Agora suporta tradução automática armazenada em propriedades _en
@@ -1152,9 +1153,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return id ? parseInt(id, 10) : null;
   }
 
+  function getProductDateValue(product) {
+    if (!product || !product.date) return null;
+    const parsed = new Date(product.date).getTime();
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
   function openProductPage(product, pushState = true) {
     if (!productPage || !product) return;
     currentOpenProductId = product.id;
+
+    // Registrar visualizacao tambem no layout "Ver mais" (pagina dinamica).
+    const registerView = httpsCallable(functions, 'registerView');
+    registerView({ productId: product.id }).catch(console.error);
 
     const title = getLocalized(product, "name");
     const subtitle = getLocalized(product, "title");
@@ -1691,12 +1702,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const end = currentPage * ITEMS_PER_PAGE;
     const productsToRender = currentFilteredProducts.slice(start, end);
 
-    const maxId = allProducts.reduce((max, p) => Math.max(max, p.id), 0);
-
     productList.innerHTML = "";
     let productsHTML = "";
     productsToRender.forEach((product, index) => {
-      const isNew = product.id === maxId;
+      const productDateValue = getProductDateValue(product);
+      const isNew = newestProductDateValue !== null && productDateValue === newestProductDateValue;
 
       const name = getLocalized(product, 'name');
       const price = product.price || "00";
@@ -1818,6 +1828,12 @@ document.addEventListener("DOMContentLoaded", () => {
           const dateB = new Date(b.date || 0);
           return dateB - dateA;
         });
+
+        newestProductDateValue = data.reduce((max, product) => {
+          const dateValue = getProductDateValue(product);
+          if (dateValue === null) return max;
+          return max === null ? dateValue : Math.max(max, dateValue);
+        }, null);
 
         allProducts = data;
         renderProducts(allProducts);

@@ -24,14 +24,17 @@
 
       <!-- Controls moved out of nav to be visible on mobile -->
       <div class="header-controls">
-        <button id="login-btn" class="login-btn">Login</button>
+        <button id="login-btn" class="login-btn" aria-label="Login" title="Login">
+          <i class="fa-solid fa-user"></i>
+        </button>
         <div class="notification-wrapper">
           <button
             id="notification-btn"
             class="notification-btn"
             title="Notificações"
           >
-            🔔 <span id="notification-count" class="notification-badge"></span>
+            <i class="fa-solid fa-bell"></i>
+            <span id="notification-count" class="notification-badge"></span>
           </button>
           <div id="notification-dropdown" class="notification-dropdown">
             <div class="notification-header">
@@ -453,3 +456,7 @@
     </script>
   </body>
 </html>
+
+
+
+

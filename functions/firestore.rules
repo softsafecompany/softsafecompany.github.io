@@ -17,10 +17,39 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if true;
-      allow write: if false; // Escrita apenas via Cloud Functions (Admin SDK)
+      // Permite criar apenas os agregados de avaliação quando o doc ainda não existe.
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['averageRating', 'ratingCount'])
+        && request.resource.data.averageRating is number
+        && request.resource.data.ratingCount is number
+        && request.resource.data.ratingCount >= 0
+        && request.resource.data.averageRating >= 0
+        && request.resource.data.averageRating <= 5;
+      // Em updates, só deixa alterar averageRating/ratingCount (preserva outros campos como clicks).
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['averageRating', 'ratingCount'])
+        && request.resource.data.averageRating is number
+        && request.resource.data.ratingCount is number
+        && request.resource.data.ratingCount >= 0
+        && request.resource.data.averageRating >= 0
+        && request.resource.data.averageRating <= 5;
+      allow delete: if false;
+
       match /ratings/{userId} {
         allow read: if true;
-        allow write: if false;
+        // Cada usuário autenticado só pode criar/editar a própria avaliação
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.rating is int
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && request.resource.data.comment is string
+          && request.resource.data.comment.size() <= 1000
+          && request.resource.data.userName is string
+          && request.resource.data.userName.size() <= 80
+          && request.resource.data.timestamp is timestamp;
+        allow delete: if false;
       }
     }
 
