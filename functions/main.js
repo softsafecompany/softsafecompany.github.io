@@ -3,7 +3,6 @@ import {
   getFirestore, collection, doc, getDoc, setDoc, updateDoc, increment, onSnapshot, addDoc, query, orderBy, getDocs, where, runTransaction, deleteDoc, collectionGroup, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, updatePassword, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getStorage, ref, uploadString, getDownloadURL, uploadBytesResumable, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 
@@ -12,7 +11,6 @@ const firebaseConfig = {
   authDomain: "softsafe-company.firebaseapp.com",
   databaseURL: "https://softsafe-company-default-rtdb.firebaseio.com",
   projectId: "softsafe-company",
-  storageBucket: "softsafe-company.firebasestorage.app",
   messagingSenderId: "660443243088",
   appId: "1:660443243088:web:8a2ad56dcea7c95cdd2755",
   measurementId: "G-HCTSMFD4N9"
@@ -23,7 +21,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 console.log("firebase inicializado");
 const auth = getAuth(app);
-const storage = getStorage(app);
 
 setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error("Erro ao definir persistência:", error);
@@ -253,6 +250,13 @@ document.addEventListener("DOMContentLoaded", () => {
     loginBtn.onclick = () => window.location.href = "perfil.html";
   }
 
+  function withImageVersion(url, version) {
+    if (!url || url.startsWith("data:")) return url || "assets/default-avatar.png";
+    const separator = url.includes("?") ? "&" : "?";
+    const safeVersion = version || Date.now();
+    return `${url}${separator}v=${safeVersion}`;
+  }
+
   // Idioma fixo em Português
   let currentLang = "pt";
 
@@ -451,14 +455,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const fallbackName = getDefaultDisplayName(user);
-        const fallbackPhoto = user.photoURL || "assets/default-avatar.png";
+        const fallbackPhoto = withImageVersion(user.photoURL || "assets/default-avatar.png", user.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).getTime() : Date.now());
         setLoginBtnUser(fallbackName, fallbackPhoto);
 
         unsubscribeUserProfile = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
             const resolvedName = data.displayName || fallbackName;
-            const resolvedPhoto = data.photoURL || fallbackPhoto;
+            const resolvedPhoto = data.photoURL
+              ? withImageVersion(data.photoURL, data.photoUpdatedAt)
+              : fallbackPhoto;
 
             setLoginBtnUser(resolvedName, resolvedPhoto);
             if (profileName) profileName.textContent = resolvedName;
@@ -469,7 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (profileImg) profileImg.src = fallbackPhoto;
             setDoc(
               doc(db, "users", user.uid),
-              { displayName: fallbackName, photoURL: user.photoURL || "", email: user.email || "" },
+              { displayName: fallbackName, photoURL: user.photoURL || "", photoUpdatedAt: Date.now(), email: user.email || "" },
               { merge: true }
             );
           }
@@ -569,21 +575,18 @@ document.addEventListener("DOMContentLoaded", () => {
           const user = userCredential.user;
           let photoURL = "";
 
-          // Upload Photo if exists
+          // Save photo as compressed Base64 directly in Firestore (no Storage)
           if (file) {
             await new Promise((resolve) => {
               resizeImage(file, 500, 500, (base64) => {
-                const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
-                uploadString(storageRef, base64, 'data_url')
-                  .then(() => getDownloadURL(storageRef))
-                  .then((url) => {
-                    photoURL = url;
-                    resolve();
-                  })
-                  .catch((err) => {
-                    console.error("Erro upload imagem signup:", err);
-                    resolve(); // Continua mesmo se falhar o upload
-                  });
+                const maxBytes = 900 * 1024;
+                if (estimateDataUrlBytes(base64) > maxBytes) {
+                  showToast("Imagem muito grande para perfil. Use uma imagem menor.", "error");
+                  resolve();
+                  return;
+                }
+                photoURL = base64;
+                resolve();
               });
             });
           }
@@ -591,7 +594,6 @@ document.addEventListener("DOMContentLoaded", () => {
           // Update Profile
           const signupDisplayName = email.split('@')[0];
           await updateProfile(user, {
-            photoURL: photoURL,
             displayName: signupDisplayName
           });
 
@@ -601,6 +603,7 @@ document.addEventListener("DOMContentLoaded", () => {
             age: age,
             country: country,
             photoURL: photoURL,
+            photoUpdatedAt: Date.now(),
             displayName: signupDisplayName, // Default display name
             createdAt: new Date()
           }, { merge: true });
@@ -688,8 +691,14 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsDataURL(file);
   }
 
+  function estimateDataUrlBytes(dataUrl) {
+    if (!dataUrl || !dataUrl.includes(",")) return 0;
+    const base64 = dataUrl.split(",")[1] || "";
+    return Math.ceil((base64.length * 3) / 4);
+  }
+
   if (profileImgContainer && profileUpload) {
-    // --- Profile Image Logic (Preview, Delete, Crop) ---
+    // --- Profile Image Logic (Preview + Direct Upload) ---
     const profileModalsHTML = `
       <div id="profile-preview-modal" class="profile-preview-modal">
         <div class="profile-preview-content">
@@ -714,23 +723,6 @@ document.addEventListener("DOMContentLoaded", () => {
           <button id="close-profile-preview" class="close-preview-btn">&times;</button>
         </div>
       </div>
-
-      <div id="crop-modal" class="crop-modal">
-        <div id="crop-modal-content" class="crop-modal-content">
-          <h3 class="crop-title">Ajustar Foto</h3>
-          <div id="crop-area" class="crop-area">
-            <img id="crop-img" src="" class="crop-img">
-            <div id="crop-drop-zone" class="crop-drop-zone">Solte a imagem aqui</div>
-          </div>
-          <div class="crop-controls">
-            <label class="crop-label">Zoom: <input type="range" id="crop-zoom-range" min="0.5" max="3" step="0.1" value="1"></label>
-          </div>
-          <div class="crop-actions">
-            <button id="btn-cancel-crop" class="btn-secondary">Cancelar</button>
-            <button id="btn-save-crop" class="btn-success">Pré-visualizar</button>
-          </div>
-        </div>
-      </div>
     `;
     document.body.insertAdjacentHTML('beforeend', profileModalsHTML);
 
@@ -744,16 +736,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewActionsConfirm = document.getElementById("preview-actions-confirm");
     const closeProfilePreview = document.getElementById("close-profile-preview");
 
-    const cropModal = document.getElementById("crop-modal");
-    const cropModalContent = document.getElementById("crop-modal-content");
-    const cropImg = document.getElementById("crop-img");
-    const cropArea = document.getElementById("crop-area");
-    const cropDropZone = document.getElementById("crop-drop-zone");
-    const cropZoomRange = document.getElementById("crop-zoom-range");
-    const btnCancelCrop = document.getElementById("btn-cancel-crop");
-    const btnSaveCrop = document.getElementById("btn-save-crop");
-
-    let cropState = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
     let pendingBlob = null;
 
     profileImgContainer.addEventListener("click", () => {
@@ -772,8 +754,7 @@ document.addEventListener("DOMContentLoaded", () => {
       customConfirm("Tem certeza que deseja remover sua foto de perfil?", "Remover Foto").then((confirmed) => {
         if (confirmed && currentUser) {
           toggleLoading(true);
-          deleteObject(ref(storage, `users/${currentUser.uid}/profile.jpg`)).catch(() => { });
-          updateDoc(doc(db, "users", currentUser.uid), { photoURL: "" })
+          updateDoc(doc(db, "users", currentUser.uid), { photoURL: "", photoUpdatedAt: Date.now() })
             .then(() => { toggleLoading(false); showToast("Foto removida!", "success"); profilePreviewModal.style.display = "none"; })
             .catch((err) => { toggleLoading(false); console.error(err); showToast("Erro ao remover foto.", "error"); });
         }
@@ -791,31 +772,12 @@ document.addEventListener("DOMContentLoaded", () => {
           showToast("Arquivo muito grande (Max 5MB).", "error");
           return;
         }
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          cropImg.src = evt.target.result;
-          cropModal.style.display = "flex";
-          cropState = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
-          cropZoomRange.value = 1;
-          cropImg.onload = () => {
-            // Ajustar imagem ao tamanho do modal (300x300)
-            const containerSize = 300;
-            const w = cropImg.naturalWidth;
-            const h = cropImg.naturalHeight;
-            let scale = w > h ? containerSize / w : containerSize / h;
 
-            cropState.scale = scale;
-            cropState.x = (containerSize - w * scale) / 2;
-            cropState.y = (containerSize - h * scale) / 2;
-
-            cropZoomRange.min = scale * 0.5;
-            cropZoomRange.max = scale * 3;
-            cropZoomRange.step = scale * 0.1;
-            cropZoomRange.value = scale;
-            updateCropTransform();
-          };
-        };
-        reader.readAsDataURL(file);
+        pendingBlob = file;
+        profilePreviewImg.src = URL.createObjectURL(file);
+        previewActionsDefault.style.display = "none";
+        previewActionsConfirm.style.display = "flex";
+        profilePreviewModal.style.display = "flex";
       }
     };
 
@@ -826,48 +788,6 @@ document.addEventListener("DOMContentLoaded", () => {
       profileUpload.value = "";
     });
 
-    // Drag and Drop Logic for Crop Modal
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      cropModalContent.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-    });
-    ['dragenter', 'dragover'].forEach(eventName => {
-      cropModalContent.addEventListener(eventName, () => cropDropZone.style.display = 'flex', false);
-    });
-    ['dragleave', 'drop'].forEach(eventName => {
-      cropModalContent.addEventListener(eventName, () => cropDropZone.style.display = 'none', false);
-    });
-    cropModalContent.addEventListener('drop', (e) => {
-      const dt = e.dataTransfer;
-      if (dt.files && dt.files[0]) handleFileSelect(dt.files[0]);
-    }, false);
-
-    function updateCropTransform() { cropImg.style.transform = `translate(${cropState.x}px, ${cropState.y}px) scale(${cropState.scale})`; }
-
-    cropZoomRange.addEventListener("input", (e) => { cropState.scale = parseFloat(e.target.value); updateCropTransform(); });
-    cropArea.addEventListener("mousedown", (e) => { cropState.isDragging = true; cropState.startX = e.clientX - cropState.x; cropState.startY = e.clientY - cropState.y; cropArea.style.cursor = "grabbing"; });
-    window.addEventListener("mousemove", (e) => { if (cropState.isDragging) { e.preventDefault(); cropState.x = e.clientX - cropState.startX; cropState.y = e.clientY - cropState.startY; updateCropTransform(); } });
-    window.addEventListener("mouseup", () => { cropState.isDragging = false; cropArea.style.cursor = "grab"; });
-    btnCancelCrop.addEventListener("click", () => cropModal.style.display = "none");
-
-    btnSaveCrop.addEventListener("click", () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 300; canvas.height = 300;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(cropImg, cropState.x, cropState.y, cropImg.naturalWidth * cropState.scale, cropImg.naturalHeight * cropState.scale);
-
-      canvas.toBlob((blob) => {
-        if (blob) {
-          pendingBlob = blob;
-          const url = URL.createObjectURL(blob);
-          profilePreviewImg.src = url;
-          cropModal.style.display = "none";
-          profilePreviewModal.style.display = "flex";
-          previewActionsDefault.style.display = "none";
-          previewActionsConfirm.style.display = "flex";
-        }
-      }, "image/jpeg", 0.8);
-    });
-
     btnCancelConfirm.addEventListener("click", () => {
       profilePreviewModal.style.display = "none";
       pendingBlob = null;
@@ -875,48 +795,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnConfirmPhoto.addEventListener("click", () => {
       if (currentUser && pendingBlob) {
-        const storageRef = ref(storage, `users/${currentUser.uid}/profile.jpg`);
-        const uploadTask = uploadBytesResumable(storageRef, pendingBlob);
-
         const progressContainer = document.getElementById("upload-progress-container");
         const progressBar = document.getElementById("upload-progress-bar");
         const progressText = document.getElementById("upload-progress-text");
 
         progressContainer.style.display = "block";
+        progressBar.style.width = "12%";
+        progressText.textContent = "12%";
         btnConfirmPhoto.disabled = true;
         btnCancelConfirm.disabled = true;
-
-        uploadTask.on('state_changed',
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            progressBar.style.width = progress + "%";
-            progressText.textContent = Math.round(progress) + "%";
-          },
-          (error) => {
-            console.error(error);
-            showToast("Erro no upload.", "error");
+        resizeImage(pendingBlob, 500, 500, (base64) => {
+          const maxBytes = 900 * 1024;
+          if (estimateDataUrlBytes(base64) > maxBytes) {
+            showToast("Imagem muito grande para perfil. Use uma imagem menor.", "error");
             progressContainer.style.display = "none";
             btnConfirmPhoto.disabled = false;
             btnCancelConfirm.disabled = false;
-          },
-          () => {
-            getDownloadURL(uploadTask.snapshot.ref).then((url) => {
-              updateDoc(doc(db, "users", currentUser.uid), { photoURL: url })
-                .then(() => {
-                  showToast("Foto atualizada!", "success");
-                  profilePreviewModal.style.display = "none";
-                  progressContainer.style.display = "none";
-                  btnConfirmPhoto.disabled = false;
-                  btnCancelConfirm.disabled = false;
-                  pendingBlob = null;
-                });
-            });
+            return;
           }
-        );
+
+          progressBar.style.width = "72%";
+          progressText.textContent = "72%";
+          updateDoc(doc(db, "users", currentUser.uid), { photoURL: base64, photoUpdatedAt: Date.now() })
+            .then(() => {
+              progressBar.style.width = "100%";
+              progressText.textContent = "100%";
+              showToast("Foto atualizada!", "success");
+              profilePreviewModal.style.display = "none";
+              progressContainer.style.display = "none";
+              btnConfirmPhoto.disabled = false;
+              btnCancelConfirm.disabled = false;
+              pendingBlob = null;
+            })
+            .catch((error) => {
+              console.error(error);
+              showToast("Erro ao salvar foto no perfil.", "error");
+              progressContainer.style.display = "none";
+              btnConfirmPhoto.disabled = false;
+              btnCancelConfirm.disabled = false;
+            });
+        });
       }
     });
   }
-
   if (editNameBtn) {
     editNameBtn.addEventListener("click", () => {
       customPrompt("Digite seu novo nome:", "Alterar Nome").then((newName) => {
@@ -3406,9 +3327,6 @@ document.addEventListener("DOMContentLoaded", () => {
               // 1. Preparar exclusão do perfil
               batch.delete(doc(db, "users", currentUser.uid));
 
-              // Deletar foto do Storage
-              deleteObject(ref(storage, `users/${currentUser.uid}/profile.jpg`)).catch(() => { });
-
               // 2. Tentar buscar e excluir comentários (Requer índice 'userId' em collectionGroup 'comments')
               const commentsQuery = query(collectionGroup(db, 'comments'), where('userId', '==', currentUser.uid));
 
@@ -3564,3 +3482,4 @@ function scrollToProducts() {
     behavior: "smooth"
   });
 }
+

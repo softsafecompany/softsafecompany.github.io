@@ -11,61 +11,125 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
   </head>
-  <body class="dark-mode">
-    <header class="header">
+  <body class="dark-mode profile-page">
+    <header class="header profile-header-top">
       <div class="logo" onclick="window.location.href='index.html'">
         <img src="assets/logo.png" alt="Soft Safe Logo" height="37" />
         <h2>SoftSafe</h2>
       </div>
-      <nav id="nav-menu">
-        <a href="index.html">Voltar ao Início</a>
-        <button id="logout-btn">Sair</button>
+      <nav id="nav-menu" class="profile-nav">
+        <a href="index.html">Voltar ao Inicio</a>
+        <button id="logout-btn" class="profile-logout-btn">Sair</button>
       </nav>
     </header>
 
-    <div class="profile-container">
-      <div class="profile-header">
-        <div id="profile-img-container" class="profile-img-wrapper">
-          <img
-            id="profile-img"
-            src="assets/default-avatar.png"
-            alt="Avatar"
-            class="profile-avatar"
-          />
-          <div class="profile-overlay"><i class="fas fa-camera"></i></div>
-        </div>
-        <label for="profile-upload" class="sr-only"
-          >Upload de Imagem de Perfil</label
-        >
-        <input
-          type="file"
-          id="profile-upload"
-          accept="image/*"
-          title="Upload de Imagem de Perfil"
-        />
-        <div>
-          <div class="profile-name-group">
-            <h2 id="profile-name">Carregando...</h2>
-            <button id="edit-name-btn" class="edit-btn" title="Editar nome">
-              <i class="fas fa-pen"></i>
-            </button>
-          </div>
-          <p id="profile-email">...</p>
-          <button id="reset-password-btn" class="download-btn">
-            Redefinir Senha
-          </button>
-          <button id="delete-account-btn" class="download-btn">
-            Excluir Conta
-          </button>
-        </div>
-      </div>
-    </div>
+    <main class="profile-main">
+      <section class="profile-hero">
+        <div class="profile-hero-glow"></div>
+        <div class="profile-hero-content">
+          <div class="profile-avatar-panel">
+            <div id="profile-img-container" class="profile-img-wrapper" title="Clique para ver/alterar foto">
+              <img
+                id="profile-img"
+                src="assets/default-avatar.png"
+                alt="Avatar"
+                class="profile-avatar"
+              />
+              <div class="profile-overlay">
+                <i class="fas fa-camera"></i>
+                <span>Trocar</span>
+              </div>
+            </div>
 
-    <footer class="footer">
-      <p>&copy; 2025 SoftSafe</p>
+            <label for="profile-upload" class="sr-only">Upload de Imagem de Perfil</label>
+            <input
+              type="file"
+              id="profile-upload"
+              accept="image/*"
+              title="Upload de Imagem de Perfil"
+            />
+
+            <button id="profile-change-photo-btn" class="profile-upload-btn" type="button">
+              <i class="fas fa-image"></i> Escolher nova foto
+            </button>
+            <p class="profile-photo-hint">Use JPG/PNG ate 5MB. Voce pode arrastar uma imagem para o avatar.</p>
+          </div>
+
+          <div class="profile-identity-panel">
+            <p class="profile-kicker">Minha Conta</p>
+            <div class="profile-name-group">
+              <h1 id="profile-name">Carregando...</h1>
+              <button id="edit-name-btn" class="edit-btn" title="Editar nome">
+                <i class="fas fa-pen"></i>
+              </button>
+            </div>
+            <p id="profile-email">...</p>
+
+            <div class="profile-actions-row">
+              <button id="reset-password-btn" class="download-btn profile-reset-btn">
+                <i class="fas fa-lock"></i> Redefinir senha
+              </button>
+              <a
+                class="profile-secondary-btn"
+                href="https://www.paypal.com/ncp/payment/984SMG97UGV6N"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="fa-brands fa-supportnow"></i> Suporte
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-options">
+        <article class="profile-card">
+          <div class="profile-card-icon"><i class="fas fa-user-shield"></i></div>
+          <h3>Seguranca da conta</h3>
+          <p>Atualize sua senha e mantenha a conta protegida.</p>
+          <button class="profile-card-btn" type="button" id="profile-security-shortcut">Abrir seguranca</button>
+        </article>
+
+        <article class="profile-card">
+          <div class="profile-card-icon"><i class="fas fa-bell"></i></div>
+          <h3>Notificacoes</h3>
+          <p>Receba avisos de novidades e atualizacoes da plataforma.</p>
+          <div class="profile-switch-row">
+            <span>Ativar notificacoes</span>
+            <label class="profile-switch">
+              <input type="checkbox" checked />
+              <span class="profile-slider"></span>
+            </label>
+          </div>
+        </article>
+
+        <article class="profile-card">
+          <div class="profile-card-icon"><i class="fas fa-clock-rotate-left"></i></div>
+          <h3>Atividade recente</h3>
+          <ul class="profile-activity-list">
+            <li>Conta conectada com sucesso</li>
+            <li>Perfil sincronizado com o Firebase</li>
+            <li>Preferencias prontas para personalizacao</li>
+          </ul>
+        </article>
+
+        <article class="profile-card">
+          <div class="profile-card-icon"><i class="fas fa-headset"></i></div>
+          <h3>Ajuda rapida</h3>
+          <p>Fale com nossa equipe ou volte para explorar os produtos.</p>
+          <div class="profile-card-links">
+            <a href="index.html#faq">FAQ</a>
+            <a href="index.html#contato">Contato</a>
+            <a href="novidades.html">Novidades</a>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer profile-footer">
+      <p>&copy; 2026 SoftSafe - Todos os direitos reservados</p>
     </footer>
 
-    <!-- WhatsApp Floating Button -->
     <a
       href="https://wa.me/258842539668"
       class="whatsapp-float"
@@ -84,14 +148,10 @@
       </svg>
     </a>
 
-    <!-- Back to Top Button -->
-    <button id="back-to-top" class="back-to-top" title="Voltar ao Topo">
-      ↑
-    </button>
+    <button id="back-to-top" class="back-to-top" title="Voltar ao Topo">^</button>
 
     <script type="module" src="functions/main.js"></script>
     <script>
-      // Efeito de Sombra no Header ao Rolar
       window.addEventListener("scroll", () => {
         const header = document.querySelector(".header");
         if (window.scrollY > 10) {
@@ -100,6 +160,45 @@
           header.classList.remove("scrolled");
         }
       });
+
+      const uploadInput = document.getElementById("profile-upload");
+      const uploadBtn = document.getElementById("profile-change-photo-btn");
+      const avatarZone = document.getElementById("profile-img-container");
+      const securityShortcut = document.getElementById("profile-security-shortcut");
+      const resetPassBtn = document.getElementById("reset-password-btn");
+
+      if (uploadBtn && uploadInput) {
+        uploadBtn.addEventListener("click", () => uploadInput.click());
+      }
+
+      if (securityShortcut && resetPassBtn) {
+        securityShortcut.addEventListener("click", () => resetPassBtn.click());
+      }
+
+      if (avatarZone && uploadInput) {
+        ["dragenter", "dragover"].forEach((eventName) => {
+          avatarZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            avatarZone.classList.add("dragging");
+          });
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+          avatarZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            avatarZone.classList.remove("dragging");
+          });
+        });
+
+        avatarZone.addEventListener("drop", (e) => {
+          const files = e.dataTransfer && e.dataTransfer.files;
+          if (!files || !files.length) return;
+          const dt = new DataTransfer();
+          dt.items.add(files[0]);
+          uploadInput.files = dt.files;
+          uploadInput.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      }
     </script>
   </body>
 </html>
