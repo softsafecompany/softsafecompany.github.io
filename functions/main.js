@@ -104,6 +104,44 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupStrengthText = document.getElementById("signup-strength-text");
   const forgotPasswordLink = document.getElementById("forgot-password-link");
 
+  // --- Product Page (Dynamic) ---
+  const productPageHTML = `
+    <section id="product-page" class="product-page" style="display:none;">
+      <div class="product-page-header">
+        <button id="product-page-back" class="product-page-back">
+          <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+      </div>
+      <div class="product-page-content">
+        <div class="product-page-media" id="product-page-media"></div>
+        <div class="product-page-info">
+          <h1 id="product-page-title"></h1>
+          <p id="product-page-subtitle" class="product-page-subtitle"></p>
+          <div class="product-page-meta" id="product-page-meta"></div>
+          <p id="product-page-description" class="product-page-description"></p>
+          <div class="product-page-actions">
+            <a id="product-page-download" class="download-btn" target="_blank" rel="noopener">Download</a>
+            <button id="product-page-whatsapp" class="whatsapp-share-btn">
+              <i class="fab fa-whatsapp"></i> Partilhar no WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+  if (document.querySelector(".header")) {
+    document.querySelector(".header").insertAdjacentHTML("afterend", productPageHTML);
+  }
+  const productPage = document.getElementById("product-page");
+  const productPageBack = document.getElementById("product-page-back");
+  const productPageMedia = document.getElementById("product-page-media");
+  const productPageTitle = document.getElementById("product-page-title");
+  const productPageSubtitle = document.getElementById("product-page-subtitle");
+  const productPageMeta = document.getElementById("product-page-meta");
+  const productPageDescription = document.getElementById("product-page-description");
+  const productPageDownload = document.getElementById("product-page-download");
+  const productPageWhatsapp = document.getElementById("product-page-whatsapp");
+
   // State for Filters and Cart
   let currentFilter = 'all';
 
@@ -988,6 +1026,96 @@ document.addEventListener("DOMContentLoaded", () => {
     return data[key] || "";
   }
 
+  const mainSections = document.querySelectorAll(".hero, #produtos, #sobre, #faq, footer");
+  let pendingProductId = null;
+
+  function setMainSectionsVisible(visible) {
+    mainSections.forEach(el => {
+      el.style.display = visible ? "" : "none";
+    });
+  }
+
+  function getProductIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("produto");
+    return id ? parseInt(id, 10) : null;
+  }
+
+  function openProductPage(product, pushState = true) {
+    if (!productPage || !product) return;
+
+    const title = getLocalized(product, "name");
+    const subtitle = getLocalized(product, "title");
+    const description = (getLocalized(product, "description") || "").replace(/\n/g, "<br>");
+    const downloadLink = product.download_link || "#";
+
+    productPageTitle.textContent = title;
+    productPageSubtitle.textContent = subtitle;
+
+    const metaParts = [];
+    if (product.author) metaParts.push(`<span>Autor: ${product.author}</span>`);
+    if (product.version) metaParts.push(`<span>Versão: ${product.version}</span>`);
+    if (product.size) metaParts.push(`<span>Tamanho: ${product.size}</span>`);
+    if (product.compatibility) metaParts.push(`<span>Compatibilidade: ${product.compatibility}</span>`);
+    productPageMeta.innerHTML = metaParts.map(m => `<div class="product-page-meta-item">${m}</div>`).join("");
+
+    productPageDescription.innerHTML = description;
+    productPageDownload.href = downloadLink;
+
+    const shareText = `Confira: ${title}`;
+    const basePath = window.location.pathname.endsWith("/") ? window.location.pathname : window.location.pathname;
+    const shareUrl = window.location.origin + basePath + `?produto=${product.id}`;
+    productPageWhatsapp.onclick = () => {
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`;
+      window.open(whatsappUrl, "_blank");
+    };
+
+    // Media
+    productPageMedia.innerHTML = "";
+    const mediaList = Array.isArray(product.media) ? product.media : [];
+    const mainMedia = mediaList.length > 0 ? mediaList[0] : { type: "image", src: product.image };
+    if (mainMedia && mainMedia.type === "video") {
+      productPageMedia.innerHTML = `<video src="${mainMedia.src}" controls></video>`;
+    } else if (mainMedia && mainMedia.src) {
+      productPageMedia.innerHTML = `<img src="${mainMedia.src}" alt="${title}">`;
+    }
+
+    setMainSectionsVisible(false);
+    productPage.style.display = "block";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    if (pushState) {
+      const newUrl = `?produto=${product.id}`;
+      history.pushState({ produto: product.id }, "", newUrl);
+    }
+  }
+
+  function closeProductPage(pushState = true) {
+    if (!productPage) return;
+    productPage.style.display = "none";
+    setMainSectionsVisible(true);
+    if (pushState) history.pushState({}, "", window.location.pathname);
+  }
+
+  function handleRoute() {
+    const id = getProductIdFromUrl();
+    if (!id) {
+      closeProductPage(false);
+      return;
+    }
+    const product = allProducts.find(p => p.id === id);
+    if (product) {
+      openProductPage(product, false);
+    } else {
+      pendingProductId = id;
+    }
+  }
+
+  window.addEventListener("popstate", handleRoute);
+  if (productPageBack) {
+    productPageBack.addEventListener("click", () => closeProductPage(true));
+  }
+
   // Product Logic (Only if productList exists)
   function showSpinner() {
     if (!productList) return;
@@ -1006,7 +1134,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.target.classList.contains("view-more-btn")) {
         const productId = parseInt(e.target.getAttribute("data-id"));
         const product = allProducts.find(p => p.id === productId);
-        openModal(product);
+        openProductPage(product, true);
       }
     });
   }
@@ -1169,6 +1297,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         allProducts = data;
         renderProducts(allProducts);
+        if (pendingProductId) {
+          const product = allProducts.find(p => p.id === pendingProductId);
+          if (product) openProductPage(product, false);
+          pendingProductId = null;
+        }
+        handleRoute();
       });
   }
 

@@ -24,8 +24,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 20px 40px;
-  background: #611e1e;
-  position: sticky;
+  position: sticky; 
   top: 0;
   z-index: 1000;
   width: 98%;
@@ -149,7 +148,7 @@ body {
     right: -100%;
     width: 250px;
     height: 100vh;
-    background-color: rgba(97, 30, 30, 0.85);
+    background-color: rgba(15, 50, 120, 0.92);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     flex-direction: column;
@@ -2152,8 +2151,8 @@ body.dark-mode .custom-dialog-input {
   cursor: pointer;
   border-radius: 5px;
   border: none;
-  background: #007bff;
-  color: white;
+  background: transparent;
+  color: #ffffff;
 }
 
 #mark-all-read {
@@ -2955,6 +2954,94 @@ body.dark-mode .auth-separator span {
 /* Comment Image */
 .comment-img {
   cursor: zoom-in;
+}
+
+/* --- Product Page (Dynamic) --- */
+.product-page {
+  padding: 40px 20px 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.product-page-header {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 20px;
+}
+
+.product-page-back {
+  background: none;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.product-page-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.product-page-media {
+  background: #111;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.product-page-media img,
+.product-page-media video {
+  width: 100%;
+  border-radius: 12px;
+  display: block;
+}
+
+.product-page-info h1 {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.product-page-subtitle {
+  color: #cfcfcf;
+  margin-bottom: 16px;
+}
+
+.product-page-meta {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #bdbdbd;
+  font-size: 0.95rem;
+}
+
+.product-page-description {
+  line-height: 1.6;
+  color: #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.product-page-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.whatsapp-share-btn {
+  border: none;
+  padding: 10px 16px;
+  background: #25d366;
+  color: #111;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .product-page-content {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --- Filters --- */
