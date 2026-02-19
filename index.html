@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt">
   <head>
     <meta charset="UTF-8" />
@@ -24,7 +24,12 @@
 
       <!-- Controls moved out of nav to be visible on mobile -->
       <div class="header-controls">
-        <button id="login-btn" class="login-btn" aria-label="Login" title="Login">
+        <button
+          id="login-btn"
+          class="login-btn"
+          aria-label="Login"
+          title="Login"
+        >
           <i class="fa-solid fa-user"></i>
         </button>
         <div class="notification-wrapper">
@@ -105,20 +110,35 @@
         <!-- Os produtos serão inseridos aqui via JavaScript -->
       </div>
     </section>
-
+    <hr />
     <section id="sobre" class="sobre">
-      <h3 data-lang="section_about">Sobre a Soft Safe</h3>
+      <h1 data-lang="section_about">Sobre a Soft Safe</h1>
+
       <p data-lang="about_text">
-        Desenvolvemos software focado em sistemas operacionais, seguindo
-        princípios clássicos de eficiência, estabilidade e segurança.
+       Desenvolvemos software focado em sistemas operacionais, seguindoprincípios clássicos de eficiência, estabilidade e segurança. <br />
+        Nossos produtos são projetados para usuários que buscam controle total
+        do seu sistema, sem abrir mão de uma interface intuitiva e fácil de
+        usar. <br />
+        Com uma equipe dedicada e apaixonada por tecnologia, estamos
+        comprometidos em fornecer soluções que realmente façam a diferença no
+        dia a dia dos nossos usuários, seja para otimizar o desempenho, proteger
+        contra ameaças ou simplesmente tornar a experiência de uso mais
+        agradável. <br />
+        Na Soft Safe, acreditamos que o software deve ser uma extensão natural
+        do usuário, e é por isso que cada um dos nossos programas é desenvolvido
+        com atenção aos detalhes, garantindo que sejam leves, rápidos e
+        confiáveis. <br />
+        Junte-se a nós nessa jornada para tornar a tecnologia mais acessível e
+        eficiente para todos os usuários. <br />
+        Soft Safe - Software que leva seu sistema ao limite certo.
       </p>
     </section>
-
+    <hr />
     <section id="faq" class="faq-section">
       <h3 data-lang="section_faq">Perguntas Frequentes</h3>
       <div class="faq-container"></div>
     </section>
-
+    <hr />
     <footer id="contato" class="footer">
       <p>
         &copy; 2026 SoftSafe
@@ -204,8 +224,14 @@
         class="zoom-content"
         id="zoom-img"
         alt="Imagem ampliada"
-        onload="document.getElementById('zoom-spinner').style.display='none'; document.getElementById('zoom-error').style.display='none'"
-        onerror="document.getElementById('zoom-spinner').style.display='none'; document.getElementById('zoom-error').style.display='block'"
+        onload="
+          document.getElementById('zoom-spinner').style.display = 'none';
+          document.getElementById('zoom-error').style.display = 'none';
+        "
+        onerror="
+          document.getElementById('zoom-spinner').style.display = 'none';
+          document.getElementById('zoom-error').style.display = 'block';
+        "
       />
       <button id="reset-zoom" class="reset-zoom-btn">Resetar Zoom</button>
     </div>
@@ -274,7 +300,8 @@
         <div class="privacy-content-scroll">
           <p><strong>Última atualização: 19/02/2026</strong></p>
           <p>
-            A sua privacidade é importante para nós. É a política da SoftSafe respeitar a sua privacidade em relação a qualquer informação sua que
+            A sua privacidade é importante para nós. É a política da SoftSafe
+            respeitar a sua privacidade em relação a qualquer informação sua que
             possamos coletar no site SoftSafe, e outros sites que possuímos e
             operamos.
           </p>
@@ -456,7 +483,3 @@
     </script>
   </body>
 </html>
-
-
-
-
