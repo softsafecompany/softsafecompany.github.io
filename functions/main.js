@@ -36,6 +36,7 @@ let unsubscribeComments = null; // To manage real-time listener
 let unsubscribeNotifications = null; // For reply notifications
 let unsubscribeProduct = null; // Listener do produto aberto
 let unsubscribeProductComments = null; // Listener de comentários do produto
+let unsubscribeUserProfile = null; // Listener do perfil do usuário logado
 let userRatingSelection = 0; // Nota selecionada pelo usuário
 let isUserRating = false; // Se o usuário está interagindo com as estrelas
 
@@ -148,16 +149,21 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="product-page-actions">
             <a id="product-page-download" class="download-btn" target="_blank" rel="noopener">Download</a>
-            <button id="product-page-whatsapp" class="whatsapp-share-btn">
-              <i class="fab fa-whatsapp"></i> Partilhar no WhatsApp
-            </button>
-            <a id="product-page-facebook" class="product-share-btn facebook" target="_blank" rel="noopener">
-              <i class="fab fa-facebook-f"></i> Facebook
-            </a>
-            <a id="product-page-x" class="product-share-btn x" target="_blank" rel="noopener">
-              <i class="fab fa-x-twitter"></i> X
-            </a>
-            <button id="product-page-copy-link" class="share-action-btn">Copiar link</button>
+            <div class="product-page-share-group">
+              <span class="product-page-share-label">Compartilhar</span>
+              <div class="product-page-share-buttons">
+                <button id="product-page-whatsapp" class="whatsapp-share-btn">
+                  <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <a id="product-page-facebook" class="product-share-btn facebook" target="_blank" rel="noopener">
+                  <i class="fab fa-facebook-f"></i> Facebook
+                </a>
+                <a id="product-page-x" class="product-share-btn x" target="_blank" rel="noopener">
+                  <i class="fab fa-x-twitter"></i> X
+                </a>
+                <button id="product-page-copy-link" class="share-action-btn">Copiar link</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -207,6 +213,45 @@ document.addEventListener("DOMContentLoaded", () => {
     loginBtn.onclick = () => {
       if (loginModal) loginModal.style.display = "block";
     };
+  }
+
+  function getDefaultDisplayName(user) {
+    if (!user) return "Usuário";
+    if (user.displayName) return user.displayName;
+    if (user.email) return user.email.split("@")[0];
+    return "Usuário";
+  }
+
+  function setLoginBtnGuest() {
+    if (!loginBtn) return;
+    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt login-icon"></i>';
+    loginBtn.onclick = () => { if (loginModal) loginModal.style.display = "block"; };
+  }
+
+  function setLoginBtnUser(displayName, photoURL) {
+    if (!loginBtn) return;
+    loginBtn.innerHTML = "";
+
+    const chip = document.createElement("span");
+    chip.className = "login-user-chip";
+
+    const avatar = document.createElement("img");
+    avatar.className = "login-user-avatar";
+    avatar.src = photoURL || "assets/default-avatar.png";
+    avatar.alt = "Foto de perfil";
+    avatar.onerror = () => {
+      avatar.onerror = null;
+      avatar.src = "assets/default-avatar.png";
+    };
+
+    const name = document.createElement("span");
+    name.className = "login-user-name";
+    name.textContent = displayName || "Usuário";
+
+    chip.appendChild(avatar);
+    chip.appendChild(name);
+    loginBtn.appendChild(chip);
+    loginBtn.onclick = () => window.location.href = "perfil.html";
   }
 
   // Idioma fixo em Português
@@ -400,36 +445,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Update Login Button Logic
       if (!user.isAnonymous) {
-        // Logado com Google -> Botão Perfil
-        if (loginBtn) {
-          loginBtn.innerHTML = '<i class="fas fa-user-circle login-icon"></i>';
-          loginBtn.onclick = () => window.location.href = 'perfil.html';
+        if (unsubscribeUserProfile) {
+          unsubscribeUserProfile();
+          unsubscribeUserProfile = null;
         }
 
-        // Populate Profile Page
-        if (profileName) {
-          // Listen to Firestore for updates (Custom Name / Custom Photo)
-          onSnapshot(doc(db, "users", user.uid), (docSnap) => {
-            if (docSnap.exists()) {
-              const data = docSnap.data();
-              profileName.textContent = data.displayName || user.displayName || "Usuário";
-              if (profileImg) profileImg.src = data.photoURL || user.photoURL || "assets/default-avatar.png";
-            } else {
-              // Fallback / Init
-              profileName.textContent = user.displayName || "Usuário";
-              if (profileImg && user.photoURL) profileImg.src = user.photoURL;
-              // Create doc if missing
-              setDoc(doc(db, "users", user.uid), { displayName: user.displayName, photoURL: user.photoURL, email: user.email }, { merge: true });
-            }
-          });
-          if (profileEmail) profileEmail.textContent = user.email;
-        }
+        const fallbackName = getDefaultDisplayName(user);
+        const fallbackPhoto = user.photoURL || "assets/default-avatar.png";
+        setLoginBtnUser(fallbackName, fallbackPhoto);
+
+        unsubscribeUserProfile = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const resolvedName = data.displayName || fallbackName;
+            const resolvedPhoto = data.photoURL || fallbackPhoto;
+
+            setLoginBtnUser(resolvedName, resolvedPhoto);
+            if (profileName) profileName.textContent = resolvedName;
+            if (profileImg) profileImg.src = resolvedPhoto;
+          } else {
+            setLoginBtnUser(fallbackName, fallbackPhoto);
+            if (profileName) profileName.textContent = fallbackName;
+            if (profileImg) profileImg.src = fallbackPhoto;
+            setDoc(
+              doc(db, "users", user.uid),
+              { displayName: fallbackName, photoURL: user.photoURL || "", email: user.email || "" },
+              { merge: true }
+            );
+          }
+
+          if (profileEmail) profileEmail.textContent = user.email || "";
+        }, () => {
+          setLoginBtnUser(fallbackName, fallbackPhoto);
+          if (profileName) profileName.textContent = fallbackName;
+          if (profileImg) profileImg.src = fallbackPhoto;
+          if (profileEmail) profileEmail.textContent = user.email || "";
+        });
       } else {
         // Usuário Anônimo -> Botão Login
-        if (loginBtn) {
-          loginBtn.innerHTML = '<i class="fas fa-sign-in-alt login-icon"></i>';
-          loginBtn.onclick = () => { if (loginModal) loginModal.style.display = "block"; };
+        if (unsubscribeUserProfile) {
+          unsubscribeUserProfile();
+          unsubscribeUserProfile = null;
         }
+        setLoginBtnGuest();
         // Redirect anonymous from profile
         if (profileName) window.location.href = "index.html";
       }
@@ -443,10 +501,11 @@ document.addEventListener("DOMContentLoaded", () => {
         unsubscribeNotifications();
         unsubscribeNotifications = null;
       }
-      if (loginBtn) {
-        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt login-icon"></i>';
-        loginBtn.onclick = () => { if (loginModal) loginModal.style.display = "block"; };
+      if (unsubscribeUserProfile) {
+        unsubscribeUserProfile();
+        unsubscribeUserProfile = null;
       }
+      setLoginBtnGuest();
       // Redirect logged out from profile
       if (profileName) window.location.href = "index.html";
     }
@@ -530,8 +589,10 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           // Update Profile
+          const signupDisplayName = email.split('@')[0];
           await updateProfile(user, {
-            photoURL: photoURL
+            photoURL: photoURL,
+            displayName: signupDisplayName
           });
 
           // Save extra data to Firestore
@@ -540,7 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
             age: age,
             country: country,
             photoURL: photoURL,
-            displayName: email.split('@')[0], // Default display name
+            displayName: signupDisplayName, // Default display name
             createdAt: new Date()
           }, { merge: true });
 
@@ -1227,9 +1288,25 @@ document.addEventListener("DOMContentLoaded", () => {
       thumb.className = "product-page-thumb";
       thumb.setAttribute("aria-label", `Miniatura ${index + 1}`);
       if (media.type === "video" && youtubeId) {
-        thumb.innerHTML = `<img src="https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg" alt="Miniatura de video"><span class="thumb-video-badge">▶</span>`;
+        thumb.innerHTML = `
+          <img src="https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg" alt="Miniatura de video">
+          <span class="thumb-type-badge yt"><i class="fab fa-youtube"></i></span>
+          <span class="thumb-duration">YouTube</span>
+        `;
       } else if (media.type === "video") {
-        thumb.innerHTML = `<span class="thumb-video-fallback">VIDEO</span>`;
+        thumb.innerHTML = `
+          <span class="thumb-video-fallback">VIDEO</span>
+          <span class="thumb-type-badge video"><i class="fas fa-video"></i></span>
+          <span class="thumb-duration" id="product-thumb-duration-${index}">--:--</span>
+        `;
+        const itemVideo = item.querySelector("video");
+        if (itemVideo) {
+          itemVideo.addEventListener("loadedmetadata", () => {
+            const durationTag = document.getElementById(`product-thumb-duration-${index}`);
+            if (!durationTag || !Number.isFinite(itemVideo.duration)) return;
+            durationTag.textContent = formatDuration(itemVideo.duration);
+          }, { once: true });
+        }
       } else {
         thumb.innerHTML = `<img src="${mediaSrc}" alt="Miniatura ${index + 1}">`;
       }
@@ -1247,9 +1324,24 @@ document.addEventListener("DOMContentLoaded", () => {
     updateProductPageCarouselPosition();
   }
 
-  function updateProductPageCarouselPosition() {
+  function formatDuration(seconds) {
+    const total = Math.max(0, Math.floor(seconds || 0));
+    const minutes = Math.floor(total / 60);
+    const secs = total % 60;
+    return `${minutes}:${String(secs).padStart(2, "0")}`;
+  }
+
+  function setProductPageCarouselTransform(offsetPx = 0, animate = true) {
+    if (!productPageCarouselInner || !productPageCarousel) return;
+    const viewportWidth = productPageCarousel.clientWidth || 1;
+    productPageCarouselInner.style.transition = animate ? "" : "none";
+    const baseTranslate = -(currentProductPageCarouselIndex * viewportWidth);
+    productPageCarouselInner.style.transform = `translateX(${baseTranslate + offsetPx}px)`;
+  }
+
+  function updateProductPageCarouselPosition(animate = true) {
     if (!productPageCarouselInner) return;
-    productPageCarouselInner.style.transform = `translateX(-${currentProductPageCarouselIndex * 100}%)`;
+    setProductPageCarouselTransform(0, animate);
 
     if (productPageCarouselDots) {
       const dots = productPageCarouselDots.getElementsByClassName("dot");
@@ -1303,6 +1395,81 @@ document.addEventListener("DOMContentLoaded", () => {
       updateProductPageCarouselPosition();
     });
   }
+
+  if (productPageCarouselInner) {
+    let productTouchStartX = 0;
+    let productTouchCurrentX = 0;
+    let productTouchStartY = 0;
+    let productTouchCurrentY = 0;
+    let isProductDragging = false;
+    let isProductHorizontalSwipe = false;
+    const swipeThreshold = 45;
+
+    productPageCarouselInner.addEventListener("touchstart", (e) => {
+      if (!e.touches || e.touches.length !== 1 || currentProductPageMedia.length <= 1) return;
+      const targetTag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : "";
+      if (targetTag === "video" || targetTag === "iframe") return;
+      productTouchStartX = e.touches[0].clientX;
+      productTouchCurrentX = productTouchStartX;
+      productTouchStartY = e.touches[0].clientY;
+      productTouchCurrentY = productTouchStartY;
+      isProductDragging = true;
+      isProductHorizontalSwipe = false;
+      setProductPageCarouselTransform(0, false);
+    }, { passive: true });
+
+    productPageCarouselInner.addEventListener("touchmove", (e) => {
+      if (!isProductDragging || !e.touches || e.touches.length !== 1) return;
+      productTouchCurrentX = e.touches[0].clientX;
+      productTouchCurrentY = e.touches[0].clientY;
+      const deltaX = productTouchCurrentX - productTouchStartX;
+      const deltaY = productTouchCurrentY - productTouchStartY;
+
+      if (!isProductHorizontalSwipe && Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        isProductHorizontalSwipe = true;
+      }
+
+      if (isProductHorizontalSwipe) {
+        e.preventDefault();
+        setProductPageCarouselTransform(deltaX, false);
+      }
+    }, { passive: false });
+
+    productPageCarouselInner.addEventListener("touchend", () => {
+      if (!isProductDragging) return;
+      const delta = productTouchCurrentX - productTouchStartX;
+
+      if (isProductHorizontalSwipe && Math.abs(delta) >= swipeThreshold) {
+        if (delta < 0) {
+          currentProductPageCarouselIndex =
+            currentProductPageCarouselIndex < currentProductPageMedia.length - 1
+              ? currentProductPageCarouselIndex + 1
+              : 0;
+        } else {
+          currentProductPageCarouselIndex =
+            currentProductPageCarouselIndex > 0
+              ? currentProductPageCarouselIndex - 1
+              : currentProductPageMedia.length - 1;
+        }
+      }
+
+      isProductDragging = false;
+      isProductHorizontalSwipe = false;
+      updateProductPageCarouselPosition(true);
+    });
+
+    productPageCarouselInner.addEventListener("touchcancel", () => {
+      if (!isProductDragging) return;
+      isProductDragging = false;
+      isProductHorizontalSwipe = false;
+      updateProductPageCarouselPosition(true);
+    });
+  }
+
+  window.addEventListener("resize", () => {
+    if (!productPage || productPage.style.display !== "block") return;
+    updateProductPageCarouselPosition(false);
+  });
 
   function updateStarsUI(value, starsElem) {
     if (!starsElem || !starsElem.forEach) return;
