@@ -6,19 +6,70 @@
     <title>Meu Perfil | Soft Safe</title>
     <link rel="shortcut icon" href="assets/icon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="perfil.css" />
+    <link rel="stylesheet" href="style-min.css" media="(max-width: 640px)" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
   </head>
   <body class="dark-mode profile-page">
-    <header class="header profile-header-top">
+    <header class="header profile-header-top universal-header">
       <div class="logo" onclick="window.location.href='index.html'">
         <img src="assets/logo.png" alt="Soft Safe Logo" height="37" />
         <h2>SoftSafe</h2>
       </div>
+
+      <div class="header-search">
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="search-bar"
+            placeholder="Pesquisar..."
+            autocomplete="off"
+          />
+          <div id="suggestions-container" class="suggestions-container"></div>
+        </div>
+        <button id="search-button" aria-label="Pesquisar">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+      </div>
+
+      <div class="header-controls">
+        <button id="login-btn" class="login-btn" aria-label="Perfil" title="Perfil">
+          <i class="fa-solid fa-user"></i>
+        </button>
+        <div class="notification-wrapper">
+          <button
+            id="notification-btn"
+            class="notification-btn"
+            title="Notificações"
+          >
+            <i class="fa-solid fa-bell"></i>
+            <span id="notification-count" class="notification-badge"></span>
+          </button>
+          <div id="notification-dropdown" class="notification-dropdown">
+            <div class="notification-header">
+              Notificações
+              <button id="mark-all-read">Ler todas</button>
+            </div>
+            <div id="notification-list" class="notification-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="burger-menu" id="burger-menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
       <nav id="nav-menu" class="profile-nav">
-        <a href="index.html">Voltar ao Inicio</a>
+        <a href="index.html#produtos">Produtos</a>
+        <a href="novidades.html">Novidades</a>
+        <a href="info.html#sobre">Sobre</a>
+        <a href="info.html#faq">FAQ</a>
+        <a href="info.html#contato">Contato</a>
         <button id="logout-btn" class="profile-logout-btn">Sair</button>
       </nav>
     </header>
@@ -97,7 +148,7 @@
           <div class="profile-switch-row">
             <span>Ativar notificacoes</span>
             <label class="profile-switch">
-              <input type="checkbox" checked />
+              <input id="profile-notifications-toggle" type="checkbox" checked />
               <span class="profile-slider"></span>
             </label>
           </div>
@@ -118,8 +169,8 @@
           <h3>Ajuda rapida</h3>
           <p>Fale com nossa equipe ou volte para explorar os produtos.</p>
           <div class="profile-card-links">
-            <a href="index.html#faq">FAQ</a>
-            <a href="index.html#contato">Contato</a>
+            <a href="info.html#faq">FAQ</a>
+            <a href="info.html#contato">Contato</a>
             <a href="novidades.html">Novidades</a>
           </div>
         </article>

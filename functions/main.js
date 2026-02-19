@@ -32,6 +32,7 @@ let unsubscribeNotifications = null; // For reply notifications
 let unsubscribeProduct = null; // Listener do produto aberto
 let unsubscribeProductComments = null; // Listener de comentários do produto
 let unsubscribeUserProfile = null; // Listener do perfil do usuário logado
+let unsubscribeUserSettings = null; // Listener das preferências do usuário logado
 let userRatingSelection = 0; // Nota selecionada pelo usuário
 let isUserRating = false; // Se o usuário está interagindo com as estrelas
 const pendingProductViews = new Set();
@@ -96,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const editNameBtn = document.getElementById("edit-name-btn");
   const resetPasswordBtn = document.getElementById("reset-password-btn");
   const deleteAccountBtn = document.getElementById("delete-account-btn");
+  const profileNotificationsToggle = document.getElementById("profile-notifications-toggle");
   const signupPassInput = document.getElementById("signup-pass");
   const signupStrengthBar = document.getElementById("signup-strength-bar");
   const signupStrengthText = document.getElementById("signup-strength-text");
@@ -487,12 +489,34 @@ document.addEventListener("DOMContentLoaded", () => {
           if (profileImg) profileImg.src = fallbackPhoto;
           if (profileEmail) profileEmail.textContent = user.email || "";
         });
+
+        if (profileNotificationsToggle) {
+          if (unsubscribeUserSettings) {
+            unsubscribeUserSettings();
+            unsubscribeUserSettings = null;
+          }
+          const settingsRef = doc(db, "users", user.uid, "settings", "preferences");
+          unsubscribeUserSettings = onSnapshot(settingsRef, (snap) => {
+            if (snap.exists()) {
+              const data = snap.data();
+              profileNotificationsToggle.checked = data.notificationsEnabled !== false;
+            } else {
+              profileNotificationsToggle.checked = true;
+              setDoc(settingsRef, { notificationsEnabled: true, updatedAt: new Date() }, { merge: true });
+            }
+          });
+        }
       } else {
         // Usuário Anônimo -> Botão Login
         if (unsubscribeUserProfile) {
           unsubscribeUserProfile();
           unsubscribeUserProfile = null;
         }
+        if (unsubscribeUserSettings) {
+          unsubscribeUserSettings();
+          unsubscribeUserSettings = null;
+        }
+        if (profileNotificationsToggle) profileNotificationsToggle.checked = true;
         setLoginBtnGuest();
         // Redirect anonymous from profile
         if (profileName) window.location.href = "index.html";
@@ -511,11 +535,35 @@ document.addEventListener("DOMContentLoaded", () => {
         unsubscribeUserProfile();
         unsubscribeUserProfile = null;
       }
+      if (unsubscribeUserSettings) {
+        unsubscribeUserSettings();
+        unsubscribeUserSettings = null;
+      }
+      if (profileNotificationsToggle) profileNotificationsToggle.checked = true;
       setLoginBtnGuest();
       // Redirect logged out from profile
       if (profileName) window.location.href = "index.html";
     }
   });
+
+  if (profileNotificationsToggle) {
+    profileNotificationsToggle.addEventListener("change", () => {
+      if (!currentUser || currentUser.isAnonymous) {
+        showToast("Inicie sessao para salvar preferencias.", "error");
+        profileNotificationsToggle.checked = true;
+        return;
+      }
+      const settingsRef = doc(db, "users", currentUser.uid, "settings", "preferences");
+      setDoc(
+        settingsRef,
+        { notificationsEnabled: profileNotificationsToggle.checked, updatedAt: new Date() },
+        { merge: true }
+      ).catch((err) => {
+        console.error(err);
+        showToast("Erro ao salvar preferencia.", "error");
+      });
+    });
+  }
 
   // --- Auth Tabs Logic ---
   if (tabLogin && tabSignup) {
@@ -577,18 +625,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
           // Save photo as compressed Base64 directly in Firestore (no Storage)
           if (file) {
-            await new Promise((resolve) => {
-              resizeImage(file, 500, 500, (base64) => {
-                const maxBytes = 900 * 1024;
-                if (estimateDataUrlBytes(base64) > maxBytes) {
-                  showToast("Imagem muito grande para perfil. Use uma imagem menor.", "error");
-                  resolve();
-                  return;
-                }
-                photoURL = base64;
-                resolve();
-              });
-            });
+            try {
+              const compressed = await compressProfileImageAdaptive(file, 1, 700 * 1024);
+              if (!compressed || estimateDataUrlBytes(compressed) > 900 * 1024) {
+                showToast("Imagem muito grande para perfil. Use uma imagem menor.", "error");
+              } else {
+                photoURL = compressed;
+              }
+            } catch (error) {
+              console.error("Erro ao processar imagem do cadastro:", error);
+            }
           }
 
           // Update Profile
@@ -665,36 +711,58 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Profile Image Upload & Resize Logic
-  function resizeImage(file, maxWidth, maxHeight, callback) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width = width * ratio;
-          height = height * ratio;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        // Quality 0.8 JPEG
-        callback(canvas.toDataURL('image/jpeg', 0.8));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
   function estimateDataUrlBytes(dataUrl) {
     if (!dataUrl || !dataUrl.includes(",")) return 0;
     const base64 = dataUrl.split(",")[1] || "";
     return Math.ceil((base64.length * 3) / 4);
+  }
+
+  function loadImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function buildSquareCanvasFromImage(img, size = 500, zoom = 1) {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+
+    const safeZoom = Math.max(0.8, Math.min(1.6, zoom || 1));
+    const coverScale = Math.max(size / img.width, size / img.height) * safeZoom;
+    const drawW = img.width * coverScale;
+    const drawH = img.height * coverScale;
+    const offsetX = (size - drawW) / 2;
+    const offsetY = (size - drawH) / 2;
+
+    ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+    return canvas;
+  }
+
+  async function compressProfileImageAdaptive(file, zoom = 1, maxBytes = 700 * 1024) {
+    const img = await loadImageFromFile(file);
+    const qualitySteps = [0.8, 0.6, 0.5];
+    const sizes = [500, 440, 380];
+
+    let lastDataUrl = "";
+    for (const size of sizes) {
+      const canvas = buildSquareCanvasFromImage(img, size, zoom);
+      for (const q of qualitySteps) {
+        const dataUrl = canvas.toDataURL("image/jpeg", q);
+        lastDataUrl = dataUrl;
+        if (estimateDataUrlBytes(dataUrl) <= maxBytes) return dataUrl;
+      }
+    }
+    return lastDataUrl;
   }
 
   if (profileImgContainer && profileUpload) {
@@ -703,8 +771,13 @@ document.addEventListener("DOMContentLoaded", () => {
       <div id="profile-preview-modal" class="profile-preview-modal">
         <div class="profile-preview-content">
           <h3 class="profile-preview-title">Foto de Perfil</h3>
-          <div class="profile-preview-image-box">
+          <div class="profile-preview-image-box profile-preview-circle">
             <img id="profile-preview-img" src="" class="profile-preview-img">
+          </div>
+          <div id="preview-zoom-controls" class="preview-zoom-controls" style="display:none;">
+            <label for="preview-zoom-range">Zoom</label>
+            <input id="preview-zoom-range" type="range" min="1" max="1.45" step="0.05" value="1">
+            <button id="btn-reposition-photo" class="btn-secondary" type="button">Reposicionar</button>
           </div>
           <div id="preview-actions-default" class="profile-action-row">
             <button id="btn-delete-photo" class="btn-danger">Apagar</button>
@@ -735,12 +808,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewActionsDefault = document.getElementById("preview-actions-default");
     const previewActionsConfirm = document.getElementById("preview-actions-confirm");
     const closeProfilePreview = document.getElementById("close-profile-preview");
+    const previewZoomControls = document.getElementById("preview-zoom-controls");
+    const previewZoomRange = document.getElementById("preview-zoom-range");
+    const btnRepositionPhoto = document.getElementById("btn-reposition-photo");
 
     let pendingBlob = null;
+    let previewZoom = 1;
+
+    const updatePreviewZoom = () => {
+      if (!profilePreviewImg) return;
+      profilePreviewImg.style.transform = `scale(${previewZoom})`;
+    };
 
     profileImgContainer.addEventListener("click", () => {
       if (profileImg) {
         profilePreviewImg.src = profileImg.src;
+        previewZoom = 1;
+        if (previewZoomRange) previewZoomRange.value = "1";
+        updatePreviewZoom();
+        if (previewZoomControls) previewZoomControls.style.display = "none";
         previewActionsDefault.style.display = "flex";
         previewActionsConfirm.style.display = "none";
         profilePreviewModal.style.display = "flex";
@@ -775,6 +861,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         pendingBlob = file;
         profilePreviewImg.src = URL.createObjectURL(file);
+        previewZoom = 1;
+        if (previewZoomRange) previewZoomRange.value = "1";
+        updatePreviewZoom();
+        if (previewZoomControls) previewZoomControls.style.display = "flex";
         previewActionsDefault.style.display = "none";
         previewActionsConfirm.style.display = "flex";
         profilePreviewModal.style.display = "flex";
@@ -791,7 +881,23 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCancelConfirm.addEventListener("click", () => {
       profilePreviewModal.style.display = "none";
       pendingBlob = null;
+      if (previewZoomControls) previewZoomControls.style.display = "none";
     });
+
+    if (previewZoomRange) {
+      previewZoomRange.addEventListener("input", () => {
+        previewZoom = parseFloat(previewZoomRange.value) || 1;
+        updatePreviewZoom();
+      });
+    }
+
+    if (btnRepositionPhoto) {
+      btnRepositionPhoto.addEventListener("click", () => {
+        previewZoom = 1;
+        if (previewZoomRange) previewZoomRange.value = "1";
+        updatePreviewZoom();
+      });
+    }
 
     btnConfirmPhoto.addEventListener("click", () => {
       if (currentUser && pendingBlob) {
@@ -804,37 +910,39 @@ document.addEventListener("DOMContentLoaded", () => {
         progressText.textContent = "12%";
         btnConfirmPhoto.disabled = true;
         btnCancelConfirm.disabled = true;
-        resizeImage(pendingBlob, 500, 500, (base64) => {
-          const maxBytes = 900 * 1024;
-          if (estimateDataUrlBytes(base64) > maxBytes) {
-            showToast("Imagem muito grande para perfil. Use uma imagem menor.", "error");
+        compressProfileImageAdaptive(pendingBlob, previewZoom, 700 * 1024)
+          .then((base64) => {
+            const maxBytes = 900 * 1024;
+            if (!base64 || estimateDataUrlBytes(base64) > maxBytes) {
+              showToast("Imagem muito grande para perfil. Use uma imagem menor.", "error");
+              progressContainer.style.display = "none";
+              btnConfirmPhoto.disabled = false;
+              btnCancelConfirm.disabled = false;
+              return;
+            }
+
+            progressBar.style.width = "72%";
+            progressText.textContent = "72%";
+            return updateDoc(doc(db, "users", currentUser.uid), { photoURL: base64, photoUpdatedAt: Date.now() })
+              .then(() => {
+                progressBar.style.width = "100%";
+                progressText.textContent = "100%";
+                showToast("Foto atualizada!", "success");
+                profilePreviewModal.style.display = "none";
+                progressContainer.style.display = "none";
+                btnConfirmPhoto.disabled = false;
+                btnCancelConfirm.disabled = false;
+                pendingBlob = null;
+                if (previewZoomControls) previewZoomControls.style.display = "none";
+              });
+          })
+          .catch((error) => {
+            console.error(error);
+            showToast("Erro ao salvar foto no perfil.", "error");
             progressContainer.style.display = "none";
             btnConfirmPhoto.disabled = false;
             btnCancelConfirm.disabled = false;
-            return;
-          }
-
-          progressBar.style.width = "72%";
-          progressText.textContent = "72%";
-          updateDoc(doc(db, "users", currentUser.uid), { photoURL: base64, photoUpdatedAt: Date.now() })
-            .then(() => {
-              progressBar.style.width = "100%";
-              progressText.textContent = "100%";
-              showToast("Foto atualizada!", "success");
-              profilePreviewModal.style.display = "none";
-              progressContainer.style.display = "none";
-              btnConfirmPhoto.disabled = false;
-              btnCancelConfirm.disabled = false;
-              pendingBlob = null;
-            })
-            .catch((error) => {
-              console.error(error);
-              showToast("Erro ao salvar foto no perfil.", "error");
-              progressContainer.style.display = "none";
-              btnConfirmPhoto.disabled = false;
-              btnCancelConfirm.disabled = false;
-            });
-        });
+          });
       }
     });
   }

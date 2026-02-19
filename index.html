@@ -6,6 +6,7 @@
     <title>Soft Safe | Software Profissional</title>
     <link rel="shortcut icon" href="assets/icon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style-min.css" media="(max-width: 640px)" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -16,10 +17,26 @@
     <div class="progress-container">
       <div class="progress-bar" id="progress-bar"></div>
     </div>
-    <header class="header">
+    <header class="header universal-header">
       <div class="logo">
         <img src="assets/logo.png" alt="Soft Safe Logo" height="37" />
         <h2>SoftSafe</h2>
+      </div>
+
+      <div class="header-search">
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="search-bar"
+            placeholder="Pesquisar aplicativos..."
+            data-lang-placeholder="search_placeholder"
+            autocomplete="off"
+          />
+          <div id="suggestions-container" class="suggestions-container"></div>
+        </div>
+        <button id="search-button" data-lang="search_btn" aria-label="Pesquisar">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
       </div>
 
       <!-- Controls moved out of nav to be visible on mobile -->
@@ -60,9 +77,9 @@
       <nav id="nav-menu">
         <a href="#produtos" data-lang="nav_products">Produtos</a>
         <a href="novidades.html" data-lang="nav_news">Novidades</a>
-        <a href="#sobre" data-lang="nav_about">Sobre</a>
-        <a href="#faq" data-lang="nav_faq">FAQ</a>
-        <a href="#contato" data-lang="nav_contact">Contato</a>
+        <a href="info.html#sobre" data-lang="nav_about">Sobre</a>
+        <a href="info.html#faq" data-lang="nav_faq">FAQ</a>
+        <a href="info.html#contato" data-lang="nav_contact">Contato</a>
         <a
           href="perfil.html"
           id="nav-profile"
@@ -72,38 +89,7 @@
         >
       </nav>
     </header>
-
-    <section class="hero">
-      <h2 data-lang="hero_title">
-        Software que leva seu sistema ao limite certo
-      </h2>
-      <p data-lang="hero_subtitle">
-        Ferramentas profissionais para sistemas operacionais <br /><span
-          class="h1small"
-          >Segurança, performance e controle total</span
-        >
-      </p>
-      <div class="search-container">
-        <div class="input-wrapper">
-          <input
-            type="text"
-            id="search-bar"
-            placeholder="Pesquisar aplicativos..."
-            data-lang-placeholder="search_placeholder"
-            autocomplete="off"
-          />
-          <div id="suggestions-container" class="suggestions-container"></div>
-        </div>
-        <button id="search-button" data-lang="search_btn">Pesquisar</button>
-      </div>
-      <div id="scroll-indicator" class="scroll-indicator">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-    </section>
-
-    <section id="produtos" class="produtos">
+<section id="produtos" class="produtos">
       <h3 data-lang="section_products">Nossos Programas</h3>
       <div id="product-count" class="product-count"></div>
       <div id="product-list" class="product-list">
@@ -111,35 +97,8 @@
       </div>
     </section>
     <hr />
-    <section id="sobre" class="sobre">
-      <h1 data-lang="section_about">Sobre a Soft Safe</h1>
 
-      <p data-lang="about_text">
-       Desenvolvemos software focado em sistemas operacionais, seguindoprincípios clássicos de eficiência, estabilidade e segurança. <br />
-        Nossos produtos são projetados para usuários que buscam controle total
-        do seu sistema, sem abrir mão de uma interface intuitiva e fácil de
-        usar. <br />
-        Com uma equipe dedicada e apaixonada por tecnologia, estamos
-        comprometidos em fornecer soluções que realmente façam a diferença no
-        dia a dia dos nossos usuários, seja para otimizar o desempenho, proteger
-        contra ameaças ou simplesmente tornar a experiência de uso mais
-        agradável. <br />
-        Na Soft Safe, acreditamos que o software deve ser uma extensão natural
-        do usuário, e é por isso que cada um dos nossos programas é desenvolvido
-        com atenção aos detalhes, garantindo que sejam leves, rápidos e
-        confiáveis. <br />
-        Junte-se a nós nessa jornada para tornar a tecnologia mais acessível e
-        eficiente para todos os usuários. <br />
-        Soft Safe - Software que leva seu sistema ao limite certo.
-      </p>
-    </section>
-    <hr />
-    <section id="faq" class="faq-section">
-      <h3 data-lang="section_faq">Perguntas Frequentes</h3>
-      <div class="faq-container"></div>
-    </section>
-    <hr />
-    <footer id="contato" class="footer">
+<footer id="contato" class="footer">
       <p>
         &copy; 2026 SoftSafe
         <span data-lang="footer_rights">Todos os direitos reservados</span>
@@ -411,40 +370,6 @@
         </button>
       </div>
     </div>
-
-    <!-- Contact Modal -->
-    <div id="contact-modal" class="modal">
-      <div class="modal-content">
-        <span class="close-contact">&times;</span>
-        <h2 data-lang="contact_title">Fale Conosco</h2>
-        <form class="contact-form" id="contact-form">
-          <input
-            type="text"
-            id="contact-name"
-            placeholder="Seu Nome"
-            data-lang-placeholder="contact_name_ph"
-            required
-          />
-          <input
-            type="email"
-            id="contact-email"
-            placeholder="Seu Email"
-            data-lang-placeholder="contact_email_ph"
-            required
-          />
-          <textarea
-            id="contact-message"
-            placeholder="Sua Mensagem"
-            data-lang-placeholder="contact_msg_ph"
-            required
-          ></textarea>
-          <button type="submit" class="download-btn" data-lang="btn_send_msg">
-            Enviar Mensagem
-          </button>
-        </form>
-      </div>
-    </div>
-
     <!-- WhatsApp Floating Button -->
     <a
       href="https://wa.me/258842539668"
@@ -483,3 +408,5 @@
     </script>
   </body>
 </html>
+
+

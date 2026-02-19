@@ -6,6 +6,7 @@
     <title>Novidades | Soft Safe</title>
     <link rel="shortcut icon" href="assets/icon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style-min.css" media="(max-width: 640px)" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -16,14 +17,31 @@
     <div class="progress-container">
       <div class="progress-bar" id="progress-bar"></div>
     </div>
-    <header class="header">
+    <header class="header universal-header">
       <div class="logo" onclick="window.location.href='index.html'">
         <img src="assets/logo.png" alt="Soft Safe Logo" height="37" />
         <h2>SoftSafe</h2>
       </div>
 
+      <div class="header-search">
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="search-bar"
+            placeholder="Pesquisar..."
+            autocomplete="off"
+          />
+          <div id="suggestions-container" class="suggestions-container"></div>
+        </div>
+        <button id="search-button" aria-label="Pesquisar">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+      </div>
+
       <div class="header-controls">
-        <button id="login-btn" class="login-btn">Login</button>
+        <button id="login-btn" class="login-btn" aria-label="Perfil" title="Perfil">
+          <i class="fa-solid fa-user"></i>
+        </button>
       </div>
 
       <div class="burger-menu" id="burger-menu">
@@ -37,9 +55,9 @@
         <a href="novidades.html" class="active" data-lang="nav_news"
           >Novidades</a
         >
-        <a href="index.html#sobre" data-lang="nav_about">Sobre</a>
-        <a href="index.html#faq" data-lang="nav_faq">FAQ</a>
-        <a href="index.html#contato" data-lang="nav_contact">Contato</a>
+        <a href="info.html#sobre" data-lang="nav_about">Sobre</a>
+        <a href="info.html#faq" data-lang="nav_faq">FAQ</a>
+        <a href="info.html#contato" data-lang="nav_contact">Contato</a>
         <a
           href="perfil.html"
           id="nav-profile"
