@@ -56,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomImg = document.getElementById("zoom-img");
   const closeZoom = document.querySelector(".close-zoom");
   const zoomSpinner = document.getElementById("zoom-spinner");
-  const themeToggleBtn = document.getElementById("theme-toggle");
   const suggestionsContainer = document.getElementById("suggestions-container");
   const resetZoomBtn = document.getElementById("reset-zoom");
   const progressBar = document.getElementById("progress-bar");
@@ -82,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const stars = document.querySelectorAll('.star');
   const ratingCountElem = document.getElementById('rating-count');
   const privacyModal = document.getElementById("privacy-modal");
-  const langToggleBtn = document.getElementById("lang-toggle");
   const notificationBtn = document.getElementById("notification-btn");
   const notificationDropdown = document.getElementById("notification-dropdown");
   const notificationList = document.getElementById("notification-list");
@@ -108,7 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // State for Filters and Cart
   let currentFilter = 'all';
-  let cart = JSON.parse(localStorage.getItem('softsafe_cart')) || [];
 
   // Auth Elements
   const tabLogin = document.getElementById("tab-login");
@@ -126,8 +123,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Inicializar currentLang no topo para evitar ReferenceError
-  let currentLang = localStorage.getItem("softsafe_lang") || "pt";
+  // Idioma fixo em Português
+  let currentLang = "pt";
 
   // --- Custom Alert & Prompt System ---
   // Injeta o HTML do modal de alerta no corpo da página
@@ -197,16 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // --- Translation Indicator ---
-  const transIndicatorHTML = `
-    <div id="translation-indicator">
-      <span class="spinner-icon">⟳</span> <span id="trans-text">Traduzindo conteúdo...</span>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', transIndicatorHTML);
-  const transIndicator = document.getElementById("translation-indicator");
-  const transLabel = document.getElementById("trans-text");
-
   // --- Loading Overlay ---
   const loadingOverlayHTML = `
     <div id="loading-overlay" class="loading-overlay">
@@ -271,67 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- Cart UI Injection ---
-  const cartHTML = `
-    <div id="cart-float-btn" class="cart-float-btn" title="Carrinho">
-      <i class="fas fa-shopping-cart"></i>
-      <span id="cart-count" class="cart-count">0</span>
-    </div>
-
-    <div id="cart-modal" class="modal">
-      <div class="modal-content">
-        <span class="close close-cart">&times;</span>
-        <h2>Carrinho de Compras</h2>
-        <div id="cart-items" class="cart-modal-items">
-          <p>Seu carrinho está vazio.</p>
-        </div>
-        <div id="cart-total" class="cart-total">Total: 0 MZN</div>
-        <div class="modal-actions">
-          <button id="checkout-btn" class="download-btn">Finalizar Compra</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', cartHTML);
-
-  const cartFloatBtn = document.getElementById("cart-float-btn");
-  const cartModal = document.getElementById("cart-modal");
-  const closeCartBtn = document.querySelector(".close-cart");
-  const cartItemsContainer = document.getElementById("cart-items");
-  const cartTotalElem = document.getElementById("cart-total");
-  const checkoutBtn = document.getElementById("checkout-btn");
-  const cartCountElem = document.getElementById("cart-count");
-
-  if (cartFloatBtn) {
-    cartFloatBtn.addEventListener("click", () => {
-      renderCart();
-      cartModal.style.display = "block";
-    });
-  }
-
-  if (closeCartBtn) {
-    closeCartBtn.addEventListener("click", () => closeModalWithFade(cartModal));
-  }
-
-  if (checkoutBtn) {
-    checkoutBtn.addEventListener("click", () => {
-      if (cart.length === 0) return showToast("Carrinho vazio.", "error");
-
-      // Simulação de Checkout via WhatsApp
-      let message = "Olá, gostaria de comprar os seguintes itens:\n\n";
-      let total = 0;
-      cart.forEach(item => {
-        message += `- ${item.name} (${item.price} MZN)\n`;
-        total += parseFloat(item.price.replace(',', '.'));
-      });
-      message += `\nTotal: ${total} MZN`;
-
-      const whatsappUrl = `https://wa.me/258842539668?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-      closeModalWithFade(cartModal);
-    });
-  }
-
   // --- Contact Modal Logic ---
   // Intercept links to #contato
   document.querySelectorAll('a[href="#contato"]').forEach(link => {
@@ -379,19 +305,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- Lógica de Tema com Firebase ---
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
     renderFooter();
     if (user) {
-      // Carregar tema salvo
-      const userRef = doc(db, "users", user.uid);
-      getDoc(userRef).then((docSnap) => {
-        if (docSnap.exists() && docSnap.data().theme === 'dark') {
-          document.body.classList.add("dark-mode");
-          if (themeToggleBtn) themeToggleBtn.textContent = "☀️";
-        }
-      });
       // Listen for notifications
       listenForNotifications(user.uid);
 
@@ -891,18 +808,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener("click", () => {
-      document.body.classList.toggle("dark-mode");
-      const isDark = document.body.classList.contains("dark-mode");
-      themeToggleBtn.textContent = isDark ? "☀️" : "🌙";
-
-      if (currentUser) {
-        setDoc(doc(db, "users", currentUser.uid), { theme: isDark ? 'dark' : 'light' }, { merge: true });
-      }
-    });
-  }
-
   // Burger Menu Logic
   if (burgerMenu && navMenu) {
     burgerMenu.addEventListener("click", () => {
@@ -1147,9 +1052,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const priceHtml = `<p class="product-price ${isPaid ? 'paid' : 'free'}">${isPaid ? 'Preço: ' + price + ' MZN' : 'Grátis'}</p>`;
 
       let actionButtons = `<button class="view-more-btn" data-id="${product.id}">Ver Mais</button>`;
-      if (isPaid) {
-        actionButtons += `<button class="add-cart-btn" onclick="addToCart(${product.id})"><i class="fas fa-cart-plus"></i></button>`;
-      }
 
       const productCard = `
           <div class="produto fade-in" style="animation-delay: ${index * 0.1}s">
@@ -1195,62 +1097,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     renderPaginationControls();
     updateCounter();
-  }
-
-  // --- Cart Logic Functions ---
-  window.addToCart = function (productId) {
-    const product = allProducts.find(p => p.id === productId);
-    if (!product) return;
-
-    if (!cart.find(p => p.id === productId)) {
-      cart.push({
-        id: product.id,
-        name: getLocalized(product, 'name'),
-        price: product.price
-      });
-      saveCart();
-      showToast("Adicionado ao carrinho!", "success");
-    } else {
-      showToast("Item já está no carrinho.", "info");
-    }
-  };
-
-  window.removeFromCart = function (productId) {
-    cart = cart.filter(p => p.id !== productId);
-    saveCart();
-    renderCart();
-  };
-
-  function saveCart() {
-    localStorage.setItem('softsafe_cart', JSON.stringify(cart));
-    updateCartCount();
-  }
-
-  function updateCartCount() {
-    if (cartCountElem) cartCountElem.textContent = cart.length;
-    if (cartFloatBtn) cartFloatBtn.style.display = cart.length > 0 ? "flex" : "none";
-  }
-
-  function renderCart() {
-    if (cart.length === 0) {
-      cartItemsContainer.innerHTML = "<p>Seu carrinho está vazio.</p>";
-      cartTotalElem.textContent = "Total: 0 MZN";
-      return;
-    }
-
-    let html = "";
-    let total = 0;
-    cart.forEach(item => {
-      html += `
-        <div class="cart-item">
-          <div><span class="cart-item-title">${item.name}</span> <br> <span class="cart-item-price">${item.price} MZN</span></div>
-          <button class="cart-remove-btn" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
-        </div>
-      `;
-      total += parseFloat(item.price.replace(',', '.')); // Assume price format "100" or "100,00"
-    });
-    cartItemsContainer.innerHTML = html;
-    cartTotalElem.textContent = `Total: ${total} MZN`;
   }
 
   function renderPaginationControls() {
@@ -1311,7 +1157,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function fetchData() {
     // Adicionado timestamp (?t=...) para evitar cache do navegador
-    fetch(`content.json?t=${new Date().getTime()}`)
+    fetch(`functions/content.json?t=${new Date().getTime()}`)
       .then(response => response.json())
       .then(data => {
         // Ordenar por data (mais recente primeiro)
@@ -1323,7 +1169,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         allProducts = data;
         renderProducts(allProducts);
-        updateCartCount(); // Initialize cart button visibility
       });
   }
 
@@ -1351,7 +1196,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const fetchNews = () => {
-      fetch(`news.json?t=${new Date().getTime()}`)
+      fetch(`functions/news.json?t=${new Date().getTime()}`)
         .then(res => res.json())
         .then(data => {
           allNews = data;
@@ -1627,6 +1472,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // News Modal Logic
   window.openNewsModal = function (id) {
+    if (!newsModal) return;
     const item = allNews.find(n => n.id === id);
     if (!item) return;
 
@@ -1901,7 +1747,9 @@ document.addEventListener("DOMContentLoaded", () => {
               // Mark as read
               updateDoc(doc(db, "notifications", notif.id), { read: true });
               // Open News Modal (if applicable)
-              if (notif.newsId) openNewsModal(parseInt(notif.newsId));
+              if (notif.newsId && typeof window.openNewsModal === "function" && document.getElementById("news-modal")) {
+                openNewsModal(parseInt(notif.newsId));
+              }
             };
             notificationList.appendChild(div);
           });
@@ -1944,6 +1792,15 @@ document.addEventListener("DOMContentLoaded", () => {
           if (callback) callback();
         });
     });
+  }
+
+  function escapeHTML(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function loadComments(newsId, containerId) {
@@ -1989,14 +1846,16 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       function renderCommentNode(c) {
+        const safeName = escapeHTML(c.name);
+        const safeText = escapeHTML(c.text);
         const div = document.createElement("div");
         div.className = "comment";
         div.id = `comment-${c.id}`;
         div.innerHTML = `
         <div class="comment-avatar">👤</div>
         <div class="comment-content">
-          <h5>${c.name} <small class="comment-date">${c.date}</small></h5>
-          <p>${c.text}</p>
+          <h5>${safeName} <small class="comment-date">${c.date}</small></h5>
+          <p>${safeText}</p>
           ${c.image ? `<img src="${c.image}" class="comment-img">` : ''}
           <div class="comment-actions">
              <button id="comment-like-btn-${c.id}" class="comment-like-btn" onclick="toggleCommentLike(${newsId}, '${c.id}')">
@@ -2096,6 +1955,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Search functionality
   function performSearch() {
+    const query = searchBar ? searchBar.value.toLowerCase() : "";
     // Now delegates to applyFilters to combine search + category
     applyFilters();
 
@@ -2861,7 +2721,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Fetch Data & Setup Animation
-    fetch(`faq.json?t=${new Date().getTime()}`)
+    fetch(`functions/faq.json?t=${new Date().getTime()}`)
       .then(res => res.json())
       .then(data => {
         faqContainer.innerHTML = "";
@@ -2892,72 +2752,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(err => console.error("Erro ao carregar FAQ:", err));
   }
 
-  // --- Language Translation Logic ---
-  const translations = {
-    pt: {
-      nav_products: "Produtos",
-      nav_news: "Novidades",
-      nav_about: "Sobre",
-      nav_faq: "FAQ",
-      nav_contact: "Contato",
-      hero_title: "Software que leva seu sistema ao limite certo",
-      hero_subtitle: "Ferramentas profissionais para sistemas operacionais <br><span class=\"h1small\">Segurança, performance e controle total</span>",
-      search_placeholder: "Pesquisar aplicativos...",
-      search_btn: "Pesquisar",
-      section_products: "Nossos Programas",
-      section_about: "Sobre a Soft Safe",
-      about_text: "Desenvolvemos software focado em sistemas operacionais, seguindo princípios clássicos de eficiência, estabilidade e segurança.",
-      section_faq: "Perguntas Frequentes",
-      footer_rights: "Todos os direitos reservados",
-      btn_download: "Download",
-      btn_share: "Compartilhar",
-      btn_reset_zoom: "Resetar Zoom",
-      share_title: "Compartilhar",
-      btn_copy_link: "Copiar Link",
-      privacy_title: "Política de Privacidade",
-      btn_understood: "Entendi",
-      contact_title: "Fale Conosco",
-      contact_name_ph: "Seu Nome",
-      contact_email_ph: "Seu Email",
-      contact_msg_ph: "Sua Mensagem",
-      btn_send_msg: "Enviar Mensagem",
-      news_hero_title: "Novidades e Atualizações",
-      news_hero_subtitle: "Fique por dentro de tudo o que acontece na SoftSafe",
-      news_search_ph: "Pesquisar notícias..."
-    },
-    en: {
-      nav_products: "Products",
-      nav_news: "News",
-      nav_about: "About",
-      nav_faq: "FAQ",
-      nav_contact: "Contact",
-      hero_title: "Software that takes your system to the right limit",
-      hero_subtitle: "Professional tools for operating systems <br><span class=\"h1small\">Security, performance, and total control</span>",
-      search_placeholder: "Search apps...",
-      search_btn: "Search",
-      section_products: "Our Programs",
-      section_about: "About Soft Safe",
-      about_text: "We develop software focused on operating systems, following classic principles of efficiency, stability, and security.",
-      section_faq: "Frequently Asked Questions",
-      footer_rights: "All rights reserved",
-      btn_download: "Download",
-      btn_share: "Share",
-      btn_reset_zoom: "Reset Zoom",
-      share_title: "Share",
-      btn_copy_link: "Copy Link",
-      privacy_title: "Privacy Policy",
-      btn_understood: "Got it",
-      contact_title: "Contact Us",
-      contact_name_ph: "Your Name",
-      contact_email_ph: "Your Email",
-      contact_msg_ph: "Your Message",
-      btn_send_msg: "Send Message",
-      news_hero_title: "News and Updates",
-      news_hero_subtitle: "Stay up to date with everything happening at SoftSafe",
-      news_search_ph: "Search news..."
-    }
-  };
-
   window.customConfirm = function (message, title = "Confirmação", okText = "Sim", cancelText = "Não") {
     return new Promise((resolve) => {
       dialogTitle.textContent = title;
@@ -2982,104 +2776,6 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     });
   };
-
-  // Função de tradução automática (Google GTX)
-  async function translateText(text, targetLang) {
-    if (!text) return "";
-    try {
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=pt&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      // Google GTX retorna array de sentenças
-      if (json && json[0]) {
-        return json[0].map(x => x[0]).join("");
-      }
-      return text;
-    } catch (e) {
-      console.error("Translation error", e);
-      return text;
-    }
-  }
-
-  // Traduzir dataset inteiro
-  async function translateDataset(data, fields, targetLang) {
-    const promises = data.map(async (item) => {
-      for (const field of fields) {
-        const targetKey = field + '_' + targetLang;
-        if (item[field] && !item[targetKey]) {
-          item[targetKey] = await translateText(item[field], targetLang);
-        }
-      }
-    });
-    await Promise.all(promises);
-  }
-
-  async function updateLanguage(lang) {
-    currentLang = lang;
-    localStorage.setItem("softsafe_lang", lang);
-
-    // Add fade class to main content areas
-    const contentAreas = document.querySelectorAll("header, section, footer");
-    contentAreas.forEach(el => el.classList.add("lang-fade"));
-
-    // Se mudar para inglês, traduzir conteúdo dinâmico
-    if (lang === 'en') {
-      // Mostrar indicador
-      if (transIndicator) {
-        transIndicator.style.display = "block";
-        transLabel.textContent = "Translating content...";
-      }
-
-      if (allProducts.length > 0) {
-        await translateDataset(allProducts, ['name', 'title', 'description'], 'en');
-      }
-      if (allNews.length > 0) {
-        await translateDataset(allNews, ['title', 'text', 'extra_text'], 'en');
-      }
-      // Ocultar indicador
-      if (transIndicator) transIndicator.style.display = "none";
-    }
-
-    setTimeout(() => {
-      // Update Button Text
-      if (langToggleBtn) langToggleBtn.textContent = lang === 'pt' ? "🇺🇸 EN" : "🇧🇷 PT";
-
-      // Update Text Content
-      document.querySelectorAll("[data-lang]").forEach(el => {
-        const key = el.getAttribute("data-lang");
-        if (translations[lang][key]) {
-          if (key === 'hero_title' || key === 'news_hero_title') {
-            startTypewriter(el, translations[lang][key]);
-          } else {
-            el.innerHTML = translations[lang][key];
-          }
-        }
-      });
-
-      // Update Placeholders
-      document.querySelectorAll("[data-lang-placeholder]").forEach(el => {
-        const key = el.getAttribute("data-lang-placeholder");
-        if (translations[lang][key]) el.placeholder = translations[lang][key];
-      });
-
-      // Re-render dynamic content
-      if (allProducts.length > 0) renderProducts(allProducts);
-      if (allNews.length > 0) renderNewsBatch();
-
-      // Remove fade class
-      contentAreas.forEach(el => el.classList.remove("lang-fade"));
-    }, 300);
-  }
-
-  // Initialize Language
-  updateLanguage(currentLang);
-
-  if (langToggleBtn) {
-    langToggleBtn.addEventListener("click", () => {
-      const newLang = currentLang === 'pt' ? 'en' : 'pt';
-      updateLanguage(newLang);
-    });
-  }
 
   // --- Reset Password Logic (Profile Page) ---
   if (resetPasswordBtn) {

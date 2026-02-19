@@ -11,7 +11,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
   </head>
-  <body>
+  <body class="dark-mode">
     <header class="header">
       <div class="logo" onclick="window.location.href='index.html'">
         <img src="assets/logo.png" alt="Soft Safe Logo" height="37" />
@@ -84,22 +84,12 @@
       </svg>
     </a>
 
-    <!-- Theme Toggle Floating Button -->
-    <button id="theme-toggle" class="theme-toggle-float" title="Alternar Tema">
-      🌙
-    </button>
-
     <!-- Back to Top Button -->
     <button id="back-to-top" class="back-to-top" title="Voltar ao Topo">
       ↑
     </button>
 
-    <!-- Language Toggle Button -->
-    <button id="lang-toggle" class="lang-toggle" title="Switch Language">
-      🇺🇸 EN
-    </button>
-
-    <script type="module" src="main.js"></script>
+    <script type="module" src="functions/main.js"></script>
     <script>
       // Efeito de Sombra no Header ao Rolar
       window.addEventListener("scroll", () => {
