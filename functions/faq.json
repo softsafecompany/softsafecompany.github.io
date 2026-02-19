@@ -34,7 +34,7 @@
     {
         "question": "Como posso relatar um bug?",
         "answer": "Se você encontrar algum bug, por favor, reporte-o através do nosso sistema de suporte ou envie um e-mail para nossa equipe de desenvolvimento."
-    },  
+    },
     {
         "question": "Quais são os requisitos mínimos do sistema?",
         "answer": "Nossos softwares exigem Windows 10 ou 11, um processador de 1 GHz ou mais rápido, 4 GB de RAM e pelo menos 500 MB de espaço livre em disco."
@@ -42,5 +42,13 @@
     {
         "question": "Posso usar o software em mais de um dispositivo?",
         "answer": "Sim, nossas licenças permitem a instalação em múltiplos dispositivos, desde que sejam para uso pessoal e não comercial. Consulte os termos de licença para mais detalhes."
+    },
+    {
+        "question": "O software é seguro para uso?",
+        "answer": "Sim, nossos softwares são desenvolvidos com as melhores práticas de segurança em mente, garantindo que seus dados estejam protegidos."
+    },
+    {
+        "question": "Como posso entrar em contato com o suporte?",
+        "answer": "Você pode entrar em contato com nosso suporte através do formulário de contato em nosso site ou enviando um e-mail para nosso suporte técnico."
     }
 ]

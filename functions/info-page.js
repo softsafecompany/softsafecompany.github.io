@@ -12,6 +12,7 @@ const aboutHtml = `
     <a class="info-tab-link" href="#sobre" data-tab-link="sobre">Sobre</a>
     <a class="info-tab-link" href="#faq" data-tab-link="faq">FAQ</a>
     <a class="info-tab-link" href="#contato" data-tab-link="contato">Contato</a>
+    <a class="info-tab-link" href="#busca" data-tab-link="busca">Busca</a>
   </div>
   <p>
     Desenvolvemos software focado em sistemas operacionais, seguindo principios classicos de eficiencia,
@@ -25,10 +26,36 @@ const aboutHtml = `
   </p>
 `;
 
-function getTabFromHash() {
-  const raw = (window.location.hash || "#sobre").replace("#", "").toLowerCase();
-  if (["sobre", "faq", "contato"].includes(raw)) return raw;
-  return "sobre";
+function normalizeText(text) {
+  return (text || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function escapeHtml(value) {
+  return (value || "")
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function readHashState() {
+  const hash = window.location.hash || "#sobre";
+  const hashBody = hash.startsWith("#") ? hash.slice(1) : hash;
+  const [tabRaw, queryRaw] = hashBody.split("?");
+  const tab = (tabRaw || "sobre").toLowerCase();
+  const params = new URLSearchParams(queryRaw || "");
+  const query = (params.get("q") || "").trim();
+  const validTab = ["sobre", "faq", "contato", "busca"].includes(tab)
+    ? tab
+    : "sobre";
+
+  return { tab: validTab, query };
 }
 
 function setActiveNav(tab) {
@@ -57,8 +84,8 @@ function renderFaq(items) {
     .map(
       (item) => `
       <article class="info-faq-item">
-        <button class="info-faq-question" type="button">${item.question || "Pergunta"}</button>
-        <div class="info-faq-answer">${item.answer || ""}</div>
+        <button class="info-faq-question" type="button">${escapeHtml(item.question || "Pergunta")}</button>
+        <div class="info-faq-answer">${escapeHtml(item.answer || "")}</div>
       </article>
     `
     )
@@ -70,6 +97,7 @@ function renderFaq(items) {
       <a class="info-tab-link" href="#sobre" data-tab-link="sobre">Sobre</a>
       <a class="info-tab-link" href="#faq" data-tab-link="faq">FAQ</a>
       <a class="info-tab-link" href="#contato" data-tab-link="contato">Contato</a>
+      <a class="info-tab-link" href="#busca" data-tab-link="busca">Busca</a>
     </div>
     <div class="info-faq-list">${html}</div>
   `;
@@ -89,6 +117,7 @@ function renderContato() {
       <a class="info-tab-link" href="#sobre" data-tab-link="sobre">Sobre</a>
       <a class="info-tab-link" href="#faq" data-tab-link="faq">FAQ</a>
       <a class="info-tab-link" href="#contato" data-tab-link="contato">Contato</a>
+      <a class="info-tab-link" href="#busca" data-tab-link="busca">Busca</a>
     </div>
     <div class="info-contact-grid">
       <article class="info-card">
@@ -122,8 +151,113 @@ function renderContato() {
   });
 }
 
+function productMatches(product, normalizedQuery) {
+  const haystack = normalizeText(
+    [
+      product.name,
+      product.title,
+      product.description,
+      product.compatibility,
+      product.version
+    ].join(" ")
+  );
+  return haystack.includes(normalizedQuery);
+}
+
+function faqMatches(item, normalizedQuery) {
+  const haystack = normalizeText([item.question, item.answer].join(" "));
+  return haystack.includes(normalizedQuery);
+}
+
+function highlightText(text, rawQuery) {
+  const safeText = escapeHtml(text || "");
+  const q = (rawQuery || "").trim();
+  if (!q) return safeText;
+
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escaped})`, "ig");
+  return safeText.replace(regex, "<mark>$1</mark>");
+}
+
+function renderSearchLoading(query) {
+  infoTitle.textContent = "Resultados da busca";
+  infoContent.innerHTML = `
+    <div class="info-tab-links">
+      <a class="info-tab-link" href="#sobre" data-tab-link="sobre">Sobre</a>
+      <a class="info-tab-link" href="#faq" data-tab-link="faq">FAQ</a>
+      <a class="info-tab-link" href="#contato" data-tab-link="contato">Contato</a>
+      <a class="info-tab-link active" href="#busca" data-tab-link="busca">Busca</a>
+    </div>
+    <p>Buscando por: <strong>${escapeHtml(query || "-")}</strong></p>
+    <p>Carregando resultados...</p>
+  `;
+  setActiveNav("busca");
+}
+
+function renderSearchResults(query, products, faqItems) {
+  const safeQuery = escapeHtml(query);
+  const normalized = normalizeText(query);
+
+  const productResults = products.filter((p) => productMatches(p, normalized));
+  const faqResults = faqItems.filter((f) => faqMatches(f, normalized));
+
+  const productHtml =
+    productResults.length > 0
+      ? productResults
+          .map((product) => {
+            const title = product.name || "Produto";
+            const desc =
+              (product.description || "").replace(/\s+/g, " ").trim().slice(0, 190) +
+              ((product.description || "").length > 190 ? "..." : "");
+            return `
+              <article class="info-result-item">
+                <p class="info-result-type">Produto</p>
+                <h3><a href="index.html?produto=${encodeURIComponent(product.id || "")}">${highlightText(title, query)}</a></h3>
+                <p>${highlightText(desc, query)}</p>
+              </article>
+            `;
+          })
+          .join("")
+      : '<p class="info-result-empty">Nenhum produto encontrado para essa busca.</p>';
+
+  const faqHtml =
+    faqResults.length > 0
+      ? faqResults
+          .map(
+            (item) => `
+              <article class="info-result-item">
+                <p class="info-result-type">FAQ</p>
+                <h3>${highlightText(item.question || "Pergunta", query)}</h3>
+                <p>${highlightText(item.answer || "", query)}</p>
+              </article>
+            `
+          )
+          .join("")
+      : '<p class="info-result-empty">Nenhuma pergunta do FAQ encontrada para essa busca.</p>';
+
+  infoTitle.textContent = "Resultados da busca";
+  infoContent.innerHTML = `
+    <div class="info-tab-links">
+      <a class="info-tab-link" href="#sobre" data-tab-link="sobre">Sobre</a>
+      <a class="info-tab-link" href="#faq" data-tab-link="faq">FAQ</a>
+      <a class="info-tab-link" href="#contato" data-tab-link="contato">Contato</a>
+      <a class="info-tab-link active" href="#busca" data-tab-link="busca">Busca</a>
+    </div>
+    <p class="info-search-summary">Busca por: <strong>${safeQuery}</strong></p>
+    <section class="info-search-group">
+      <h2>Produtos (${productResults.length})</h2>
+      ${productHtml}
+    </section>
+    <section class="info-search-group">
+      <h2>FAQ (${faqResults.length})</h2>
+      ${faqHtml}
+    </section>
+  `;
+  setActiveNav("busca");
+}
+
 async function renderCurrentTab() {
-  const tab = getTabFromHash();
+  const { tab, query } = readHashState();
 
   if (tab === "sobre") {
     renderAbout();
@@ -138,6 +272,44 @@ async function renderCurrentTab() {
       renderFaq(Array.isArray(data) ? data : []);
     } catch (error) {
       infoContent.innerHTML = '<p>Nao foi possivel carregar o FAQ.</p>';
+    }
+    return;
+  }
+
+  if (tab === "busca") {
+    if (!query) {
+      infoTitle.textContent = "Resultados da busca";
+      infoContent.innerHTML = `
+        <div class="info-tab-links">
+          <a class="info-tab-link" href="#sobre" data-tab-link="sobre">Sobre</a>
+          <a class="info-tab-link" href="#faq" data-tab-link="faq">FAQ</a>
+          <a class="info-tab-link" href="#contato" data-tab-link="contato">Contato</a>
+          <a class="info-tab-link active" href="#busca" data-tab-link="busca">Busca</a>
+        </div>
+        <p>Digite algo na barra de pesquisa para buscar em Produtos e FAQ.</p>
+      `;
+      setActiveNav("busca");
+      return;
+    }
+
+    renderSearchLoading(query);
+    try {
+      const [productsResp, faqResp] = await Promise.all([
+        fetch("functions/content.json", { cache: "no-store" }),
+        fetch("functions/faq.json", { cache: "no-store" })
+      ]);
+      const [productsData, faqData] = await Promise.all([
+        productsResp.json(),
+        faqResp.json()
+      ]);
+
+      renderSearchResults(
+        query,
+        Array.isArray(productsData) ? productsData : [],
+        Array.isArray(faqData) ? faqData : []
+      );
+    } catch (error) {
+      infoContent.innerHTML = "<p>Nao foi possivel carregar os resultados da busca.</p>";
     }
     return;
   }
