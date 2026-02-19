@@ -1125,7 +1125,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentOpenProductId = null;
   let currentMedia = [];
   let currentProductPageMedia = [];
-  let newestProductDateValue = null;
+  let newestProductBadgeId = null;
 
   // Helper for localization
   // Agora suporta tradução automática armazenada em propriedades _en
@@ -1151,12 +1151,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("produto");
     return id ? parseInt(id, 10) : null;
-  }
-
-  function getProductDateValue(product) {
-    if (!product || !product.date) return null;
-    const parsed = new Date(product.date).getTime();
-    return Number.isFinite(parsed) ? parsed : null;
   }
 
   function openProductPage(product, pushState = true) {
@@ -1705,8 +1699,7 @@ document.addEventListener("DOMContentLoaded", () => {
     productList.innerHTML = "";
     let productsHTML = "";
     productsToRender.forEach((product, index) => {
-      const productDateValue = getProductDateValue(product);
-      const isNew = newestProductDateValue !== null && productDateValue === newestProductDateValue;
+      const isNew = newestProductBadgeId !== null && String(product.id) === String(newestProductBadgeId);
 
       const name = getLocalized(product, 'name');
       const price = product.price || "00";
@@ -1829,11 +1822,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return dateB - dateA;
         });
 
-        newestProductDateValue = data.reduce((max, product) => {
-          const dateValue = getProductDateValue(product);
-          if (dateValue === null) return max;
-          return max === null ? dateValue : Math.max(max, dateValue);
-        }, null);
+        newestProductBadgeId = data.length > 0 ? data[0].id : null;
 
         allProducts = data;
         renderProducts(allProducts);
