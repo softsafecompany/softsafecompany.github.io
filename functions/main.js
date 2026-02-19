@@ -614,6 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
           console.error(error);
           if (error.code === 'auth/email-already-in-use') showToast("Este e-mail já está em uso.", "error");
           else if (error.code === 'auth/weak-password') showToast("A senha é muito fraca.", "error");
+          else if (error.code === 'auth/operation-not-allowed') showToast("Cadastro por e-mail/senha desativado no Firebase.", "error");
           else showToast("Erro ao criar conta.", "error");
         });
     });
