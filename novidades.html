@@ -12,7 +12,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
   </head>
-  <body class="dark-mode">
+  <body class="dark-mode app-layout">
     <div id="menu-overlay" class="menu-overlay"></div>
     <div class="progress-container">
       <div class="progress-bar" id="progress-bar"></div>
@@ -50,14 +50,24 @@
         <span></span>
       </div>
 
-      <nav id="nav-menu">
-        <a href="index.html#produtos" data-lang="nav_products">Produtos</a>
-        <a href="novidades.html" class="active" data-lang="nav_news"
-          >Novidades</a
-        >
-        <a href="info.html#sobre" data-lang="nav_about">Sobre</a>
-        <a href="info.html#faq" data-lang="nav_faq">FAQ</a>
-        <a href="info.html#contato" data-lang="nav_contact">Contato</a>
+      <nav id="nav-menu" class="app-nav">
+        <a href="index.html#produtos"><i class="fa-solid fa-house"></i><span>Início</span></a>
+        <a href="novidades.html" class="active"><i class="fa-solid fa-gamepad"></i><span>Jogos</span></a>
+        <a href="index.html#produtos"><i class="fa-solid fa-grip"></i><span>Aplicativos</span></a>
+        <a href="info.html#sobre"><i class="fa-regular fa-newspaper"></i><span>Artigos</span></a>
+        <div class="nav-more">
+          <button class="nav-more-btn" type="button" aria-expanded="false">
+            <i class="fa-solid fa-ellipsis-vertical"></i><span>Mais</span>
+          </button>
+          <div class="nav-more-menu">
+            <a href="info.html#sobre">Sobre</a>
+            <a href="info.html#faq">FAQ</a>
+            <a href="info.html#contato">Contato</a>
+            <a href="info.html#busca">Busca geral</a>
+            <a href="perfil.html">Perfil</a>
+            <a href="perfil.html#notificacoes">Centro de notificacoes</a>
+          </div>
+        </div>
         <a
           href="perfil.html"
           id="nav-profile"

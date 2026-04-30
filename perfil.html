@@ -13,7 +13,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
   </head>
-  <body class="dark-mode profile-page">
+  <body class="dark-mode profile-page app-layout">
     <header class="header profile-header-top universal-header">
       <div class="logo" onclick="window.location.href='index.html'">
         <img src="assets/logo.png" alt="Soft Safe Logo" height="37" />
@@ -64,12 +64,24 @@
         <span></span>
       </div>
 
-      <nav id="nav-menu" class="profile-nav">
-        <a href="index.html#produtos">Produtos</a>
-        <a href="novidades.html">Novidades</a>
-        <a href="info.html#sobre">Sobre</a>
-        <a href="info.html#faq">FAQ</a>
-        <a href="info.html#contato">Contato</a>
+      <nav id="nav-menu" class="profile-nav app-nav">
+        <a href="index.html#produtos"><i class="fa-solid fa-house"></i><span>Início</span></a>
+        <a href="novidades.html"><i class="fa-solid fa-gamepad"></i><span>Jogos</span></a>
+        <a href="index.html#produtos"><i class="fa-solid fa-grip"></i><span>Aplicativos</span></a>
+        <a href="info.html#sobre"><i class="fa-regular fa-newspaper"></i><span>Artigos</span></a>
+        <div class="nav-more">
+          <button class="nav-more-btn" type="button" aria-expanded="false">
+            <i class="fa-solid fa-ellipsis-vertical"></i><span>Mais</span>
+          </button>
+          <div class="nav-more-menu">
+            <a href="info.html#sobre">Sobre</a>
+            <a href="info.html#faq">FAQ</a>
+            <a href="info.html#contato">Contato</a>
+            <a href="info.html#busca">Busca geral</a>
+            <a href="perfil.html">Perfil</a>
+            <a href="perfil.html#notificacoes">Centro de notificacoes</a>
+          </div>
+        </div>
         <button id="logout-btn" class="profile-logout-btn">Sair</button>
       </nav>
     </header>
@@ -134,7 +146,7 @@
       </section>
 
       <section class="profile-options">
-        <article class="profile-card">
+        <article class="profile-card" id="notificacoes">
           <div class="profile-card-icon"><i class="fas fa-user-shield"></i></div>
           <h3>Seguranca da conta</h3>
           <p>Atualize sua senha e mantenha a conta protegida.</p>

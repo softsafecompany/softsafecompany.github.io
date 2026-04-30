@@ -1,4 +1,8 @@
 @media (max-width: 640px) {
+  body.app-layout .universal-header {
+    grid-template-columns: auto 1fr !important;
+  }
+
   .universal-header .header-search {
     position: static !important;
     left: auto !important;
@@ -81,5 +85,22 @@
   .preview-zoom-controls {
     grid-template-columns: 1fr !important;
     gap: 6px !important;
+  }
+
+  body.app-layout .universal-header .header-search {
+    order: 0 !important;
+    margin-top: 0 !important;
+    display: flex !important;
+    grid-template-columns: none !important;
+  }
+
+  body.app-layout #nav-menu {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 72px !important;
   }
 }
